@@ -7,7 +7,8 @@ LOCAL_SRC_FILES := \
     com_android_terminal_Terminal.cpp
 
 LOCAL_C_INCLUDES += \
-    external/libvterm/include
+    external/libvterm/include \
+    libcore/include
 
 LOCAL_SHARED_LIBRARIES := \
     libutils \

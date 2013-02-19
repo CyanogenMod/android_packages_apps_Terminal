@@ -17,6 +17,8 @@
 package com.android.terminal;
 
 public class Terminal {
+    private TerminalCallbacks mCallbacks;
+
     static {
         System.loadLibrary("jni_terminal");
     }
@@ -24,13 +26,15 @@ public class Terminal {
     private final int mNativePtr;
 
     public Terminal() {
-        mNativePtr = nativeInit(25, 80);
+        mCallbacks = new TerminalCallbacks() {
+        };
+        mNativePtr = nativeInit(mCallbacks, 25, 80);
     }
 
     public int getRows() {
         return nativeGetRows(mNativePtr);
     }
 
-    private static native int nativeInit(int rows, int cols);
+    private static native int nativeInit(TerminalCallbacks callbacks, int rows, int cols);
     private static native int nativeGetRows(int ptr);
 }

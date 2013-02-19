@@ -19,6 +19,7 @@
 #include <utils/Log.h>
 #include "jni.h"
 #include "JNIHelp.h"
+#include <ScopedLocalRef.h>
 
 #include <vterm.h>
 
@@ -26,7 +27,62 @@
 
 namespace android {
 
-class Terminal;
+/*
+ * JavaVM reference
+ */
+static JavaVM* gJavaVM;
+
+/*
+ * Callback class reference
+ */
+static jclass terminalCallbacksClass;
+
+/*
+ * Callback methods
+ */
+static jmethodID damageMethod;
+static jmethodID prescrollMethod;
+static jmethodID moveRectMethod;
+static jmethodID moveCursorMethod;
+static jmethodID setTermPropBooleanMethod;
+static jmethodID setTermPropIntMethod;
+static jmethodID setTermPropStringMethod;
+static jmethodID setTermPropColorMethod;
+static jmethodID bellMethod;
+static jmethodID resizeMethod;
+
+
+/*
+ * Terminal session
+ */
+
+class Terminal {
+public:
+    Terminal(jobject callbacks, int rows, int cols);
+    ~Terminal();
+
+    int getRows() const;
+
+    jobject getCallbacks() const;
+
+private:
+    VTerm *mVt;
+    VTermScreen *mVts;
+
+    jobject mCallbacks;
+    int mRows;
+    int mCols;
+};
+
+static JNIEnv* getEnv() {
+    JNIEnv* env;
+
+    if (gJavaVM->AttachCurrentThread(&env, NULL) < 0) {
+        return NULL;
+    }
+
+    return env;
+}
 
 /*
  * VTerm event handlers
@@ -35,31 +91,82 @@ class Terminal;
 static int term_damage(VTermRect rect, void *user) {
     Terminal* term = reinterpret_cast<Terminal*>(user);
     ALOGW("term_damage");
-    return 1;
+
+    JNIEnv* env = getEnv();
+    if (env == NULL) {
+        ALOGE("term_damage: couldn't get JNIEnv");
+        return 0;
+    }
+
+    return env->CallIntMethod(term->getCallbacks(), damageMethod, rect.start_row, rect.end_row,
+            rect.start_col, rect.end_col);
 }
 
 static int term_prescroll(VTermRect rect, void *user) {
     Terminal* term = reinterpret_cast<Terminal*>(user);
     ALOGW("term_prescroll");
-    return 1;
+
+    JNIEnv* env = getEnv();
+    if (env == NULL) {
+        ALOGE("term_prescroll: couldn't get JNIEnv");
+        return 0;
+    }
+
+    return env->CallIntMethod(term->getCallbacks(), prescrollMethod);
 }
 
 static int term_moverect(VTermRect dest, VTermRect src, void *user) {
     Terminal* term = reinterpret_cast<Terminal*>(user);
     ALOGW("term_moverect");
-    return 1;
+
+    JNIEnv* env = getEnv();
+    if (env == NULL) {
+        ALOGE("term_moverect: couldn't get JNIEnv");
+        return 0;
+    }
+
+    return env->CallIntMethod(term->getCallbacks(), moveRectMethod);
 }
 
 static int term_movecursor(VTermPos pos, VTermPos oldpos, int visible, void *user) {
     Terminal* term = reinterpret_cast<Terminal*>(user);
     ALOGW("term_movecursor");
-    return 1;
+
+    JNIEnv* env = getEnv();
+    if (env == NULL) {
+        ALOGE("term_movecursor: couldn't get JNIEnv");
+        return 0;
+    }
+
+    return env->CallIntMethod(term->getCallbacks(), moveCursorMethod);
 }
 
 static int term_settermprop(VTermProp prop, VTermValue *val, void *user) {
     Terminal* term = reinterpret_cast<Terminal*>(user);
     ALOGW("term_settermprop");
-    return 1;
+
+    JNIEnv* env = getEnv();
+    if (env == NULL) {
+        ALOGE("term_settermprop: couldn't get JNIEnv");
+        return 0;
+    }
+
+    switch (vterm_get_prop_type(prop)) {
+    case VTERM_VALUETYPE_BOOL:
+        return env->CallIntMethod(term->getCallbacks(), setTermPropBooleanMethod,
+                static_cast<jboolean>(val->boolean));
+    case VTERM_VALUETYPE_INT:
+        return env->CallIntMethod(term->getCallbacks(), setTermPropIntMethod, prop, val->number);
+    case VTERM_VALUETYPE_STRING:
+        return env->CallIntMethod(term->getCallbacks(), setTermPropStringMethod, prop,
+                env->NewStringUTF(val->string));
+    case VTERM_VALUETYPE_COLOR:
+        return env->CallIntMethod(term->getCallbacks(), setTermPropIntMethod, prop, val->color.red,
+                val->color.green, val->color.blue);
+    default:
+        ALOGE("unknown callback type");
+        return 0;
+    }
 }
 
 static int term_setmousefunc(VTermMouseFunc func, void *data, void *user) {
@@ -71,13 +178,27 @@ static int term_setmousefunc(VTermMouseFunc func, void *data, void *user) {
 static int term_bell(void *user) {
     Terminal* term = reinterpret_cast<Terminal*>(user);
     ALOGW("term_bell");
-    return 1;
+
+    JNIEnv* env = getEnv();
+    if (env == NULL) {
+        ALOGE("term_bell: couldn't get JNIEnv");
+        return 0;
+    }
+
+    return env->CallIntMethod(term->getCallbacks(), bellMethod);
 }
 
 static int term_resize(int rows, int cols, void *user) {
     Terminal* term = reinterpret_cast<Terminal*>(user);
     ALOGW("term_resize");
-    return 1;
+
+    JNIEnv* env = getEnv();
+    if (env == NULL) {
+        ALOGE("term_bell: couldn't get JNIEnv");
+        return 0;
+    }
+
+    return env->CallIntMethod(term->getCallbacks(), resizeMethod);
 }
 
 static VTermScreenCallbacks cb = {
@@ -91,26 +212,8 @@ static VTermScreenCallbacks cb = {
     .resize = term_resize,
 };
 
-/*
- * Terminal session
- */
-
-class Terminal {
-public:
-    Terminal(int rows, int cols);
-    ~Terminal();
-
-    int getRows();
-
-private:
-    VTerm *mVt;
-    VTermScreen *mVts;
-
-    int mRows;
-    int mCols;
-};
-
-Terminal::Terminal(int rows, int cols) : mRows(rows), mCols(cols) {
+Terminal::Terminal(jobject callbacks, int rows, int cols) :
+        mCallbacks(callbacks), mRows(rows), mCols(cols) {
 //    pt->writefn = NULL;
 //    pt->resizedfn = NULL;
 
@@ -131,17 +234,21 @@ Terminal::~Terminal() {
     vterm_free(mVt);
 }
 
-int Terminal::getRows() {
+int Terminal::getRows() const {
     return mRows;
+}
+
+jobject Terminal::getCallbacks() const {
+    return mCallbacks;
 }
 
 /*
  * JNI glue
  */
 
-static jint com_android_terminal_Terminal_nativeInit(JNIEnv* env, jclass clazz,
+static jint com_android_terminal_Terminal_nativeInit(JNIEnv* env, jclass clazz, jobject callbacks,
         jint rows, jint cols) {
-    return reinterpret_cast<jint>(new Terminal(rows, cols));
+    return reinterpret_cast<jint>(new Terminal(env->NewGlobalRef(callbacks), rows, cols));
 }
 
 static jint com_android_terminal_Terminal_nativeGetRows(JNIEnv* env, jclass clazz, jint ptr) {
@@ -150,11 +257,34 @@ static jint com_android_terminal_Terminal_nativeGetRows(JNIEnv* env, jclass claz
 }
 
 static JNINativeMethod gMethods[] = {
-    { "nativeInit", "(II)I", (void*)com_android_terminal_Terminal_nativeInit },
+    { "nativeInit", "(Lcom/android/terminal/TerminalCallbacks;II)I", (void*)com_android_terminal_Terminal_nativeInit },
     { "nativeGetRows", "(I)I", (void*)com_android_terminal_Terminal_nativeGetRows },
 };
 
 int register_com_android_terminal_Terminal(JNIEnv* env) {
+    ScopedLocalRef<jclass> localClass(env,
+            env->FindClass("com/android/terminal/TerminalCallbacks"));
+
+    android::terminalCallbacksClass = reinterpret_cast<jclass>(env->NewGlobalRef(localClass.get()));
+
+    android::damageMethod = env->GetMethodID(terminalCallbacksClass, "damage", "(IIII)I");
+    android::prescrollMethod = env->GetMethodID(terminalCallbacksClass, "prescroll", "(IIII)I");
+    android::moveRectMethod = env->GetMethodID(terminalCallbacksClass, "moveRect", "(IIIIIIII)I");
+    android::moveCursorMethod = env->GetMethodID(terminalCallbacksClass, "moveCursor",
+            "(IIIIIIIII)I");
+    android::setTermPropBooleanMethod = env->GetMethodID(terminalCallbacksClass,
+            "setTermPropBoolean", "(IZ)I");
+    android::setTermPropIntMethod = env->GetMethodID(terminalCallbacksClass, "setTermPropInt",
+            "(II)I");
+    android::setTermPropStringMethod = env->GetMethodID(terminalCallbacksClass, "setTermPropString",
+            "(ILjava/lang/String;)I");
+    android::setTermPropColorMethod = env->GetMethodID(terminalCallbacksClass, "setTermPropColor",
+            "(IIII)I");
+    android::bellMethod = env->GetMethodID(terminalCallbacksClass, "bell", "()I");
+    android::resizeMethod = env->GetMethodID(terminalCallbacksClass, "resize", "(II)I");
+
+    env->GetJavaVM(&gJavaVM);
+
     return jniRegisterNativeMethods(env, "com/android/terminal/Terminal",
             gMethods, NELEM(gMethods));
 }
