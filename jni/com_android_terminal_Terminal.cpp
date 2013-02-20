@@ -21,6 +21,13 @@
 #include "JNIHelp.h"
 #include <ScopedLocalRef.h>
 
+#include <termios.h>
+#include <util.h>
+//#include <pty.h>
+#include <utmp.h>
+#include <unistd.h>
+//#include <stdlib.h>
+
 #include <vterm.h>
 
 #include <string.h>
@@ -61,17 +68,22 @@ public:
     Terminal(jobject callbacks, int rows, int cols);
     ~Terminal();
 
+    size_t write(const char *bytes, size_t len);
+    void resize(short unsigned int rows, short unsigned int cols);
+
     int getRows() const;
 
     jobject getCallbacks() const;
 
 private:
+    int mMasterFd;
     VTerm *mVt;
     VTermScreen *mVts;
 
+    short unsigned int mRows;
+    short unsigned int mCols;
+
     jobject mCallbacks;
-    int mRows;
-    int mCols;
 };
 
 static JNIEnv* getEnv() {
@@ -214,9 +226,6 @@ static VTermScreenCallbacks cb = {
 
 Terminal::Terminal(jobject callbacks, int rows, int cols) :
         mCallbacks(callbacks), mRows(rows), mCols(cols) {
-//    pt->writefn = NULL;
-//    pt->resizedfn = NULL;
-
     /* Create VTerm */
     mVt = vterm_new(rows, cols);
     vterm_parser_set_utf8(mVt, 1);
@@ -227,11 +236,72 @@ Terminal::Terminal(jobject callbacks, int rows, int cols) :
     vterm_screen_set_callbacks(mVts, &cb, this);
     vterm_screen_set_damage_merge(mVts, VTERM_DAMAGE_SCROLL);
 
-    // TODO: finish setup and forkpty() here
+    /* None of the docs about termios explain how to construct a new one of
+     * these, so this is largely a guess */
+    struct termios termios = {
+        .c_iflag = ICRNL|IXON|IUTF8,
+        .c_oflag = OPOST|ONLCR|NL0|CR0|TAB0|BS0|VT0|FF0,
+        .c_cflag = CS8|CREAD,
+        .c_lflag = ISIG|ICANON|IEXTEN|ECHO|ECHOE|ECHOK,
+        /* c_cc later */
+    };
+
+//    cfsetspeed(&termios, 38400);
+//
+//    termios.c_cc[VINTR]    = 0x1f & 'C';
+//    termios.c_cc[VQUIT]    = 0x1f & '\\';
+//    termios.c_cc[VERASE]   = 0x7f;
+//    termios.c_cc[VKILL]    = 0x1f & 'U';
+//    termios.c_cc[VEOF]     = 0x1f & 'D';
+//    termios.c_cc[VEOL]     = _POSIX_VDISABLE;
+//    termios.c_cc[VEOL2]    = _POSIX_VDISABLE;
+//    termios.c_cc[VSTART]   = 0x1f & 'Q';
+//    termios.c_cc[VSTOP]    = 0x1f & 'S';
+//    termios.c_cc[VSUSP]    = 0x1f & 'Z';
+//    termios.c_cc[VREPRINT] = 0x1f & 'R';
+//    termios.c_cc[VWERASE]  = 0x1f & 'W';
+//    termios.c_cc[VLNEXT]   = 0x1f & 'V';
+//    termios.c_cc[VMIN]     = 1;
+//    termios.c_cc[VTIME]    = 0;
+//
+//    struct winsize size = { mRows, mCols, 0, 0 };
+//
+//    pid_t kid = forkpty(&mMasterFd, NULL, &termios, &size);
+//    if(kid == 0) {
+//        /* Restore the ISIG signals back to defaults */
+//        signal(SIGINT, SIG_DFL);
+//        signal(SIGQUIT, SIG_DFL);
+//        signal(SIGSTOP, SIG_DFL);
+//        signal(SIGCONT, SIG_DFL);
+//
+//        gchar *term = g_strdup_printf("TERM=%s", CONF_term);
+//        putenv(term);
+//        /* Do not free 'term', it is part of the environment */
+//
+//        char *shell = getenv("SHELL");
+//        char *args[2] = {shell, NULL};
+//        execvp(shell, args);
+//        fprintf(stderr_save, "Cannot exec(%s) - %s\n", shell, strerror(errno));
+//        _exit(1);
+//    }
+//
+//    fcntl(mMasterFd, F_SETFL, fcntl(mMasterFd, F_GETFL) | O_NONBLOCK);
 }
 
 Terminal::~Terminal() {
+    close(mMasterFd);
     vterm_free(mVt);
+}
+
+size_t Terminal::write(const char *bytes, size_t len) {
+    return ::write(mMasterFd, bytes, len);
+}
+
+void Terminal::resize(short unsigned int rows, short unsigned int cols) {
+    mRows = rows;
+    mCols = cols;
+    struct winsize size = { rows, cols, 0, 0 };
+    ioctl(mMasterFd, TIOCSWINSZ, &size);
 }
 
 int Terminal::getRows() const {
@@ -251,6 +321,19 @@ static jint com_android_terminal_Terminal_nativeInit(JNIEnv* env, jclass clazz, 
     return reinterpret_cast<jint>(new Terminal(env->NewGlobalRef(callbacks), rows, cols));
 }
 
+static void com_android_terminal_Terminal_nativeWrite(JNIEnv* env,
+        jclass clazz, jint ptr) {
+    Terminal* term = reinterpret_cast<Terminal*>(ptr);
+    // const char *bytes, size_t len
+    term->write(NULL, 0);
+}
+
+static void com_android_terminal_Terminal_nativeResize(JNIEnv* env,
+        jclass clazz, jint ptr, jint rows, jint cols) {
+    Terminal* term = reinterpret_cast<Terminal*>(ptr);
+    term->resize(rows, cols);
+}
+
 static jint com_android_terminal_Terminal_nativeGetRows(JNIEnv* env, jclass clazz, jint ptr) {
     Terminal* term = reinterpret_cast<Terminal*>(ptr);
     return term->getRows();
@@ -258,6 +341,7 @@ static jint com_android_terminal_Terminal_nativeGetRows(JNIEnv* env, jclass claz
 
 static JNINativeMethod gMethods[] = {
     { "nativeInit", "(Lcom/android/terminal/TerminalCallbacks;II)I", (void*)com_android_terminal_Terminal_nativeInit },
+    { "nativeResize", "(III)", (void*)com_android_terminal_Terminal_nativeResize },
     { "nativeGetRows", "(I)I", (void*)com_android_terminal_Terminal_nativeGetRows },
 };
 

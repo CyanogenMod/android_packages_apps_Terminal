@@ -31,10 +31,15 @@ public class Terminal {
         mNativePtr = nativeInit(mCallbacks, 25, 80);
     }
 
+    public void resize(int rows, int cols) {
+        nativeResize(mNativePtr, rows, cols);
+    }
+
     public int getRows() {
         return nativeGetRows(mNativePtr);
     }
 
     private static native int nativeInit(TerminalCallbacks callbacks, int rows, int cols);
+    private static native int nativeResize(int ptr, int rows, int cols);
     private static native int nativeGetRows(int ptr);
 }
