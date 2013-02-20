@@ -27,7 +27,11 @@ public class TerminalActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        Terminal t = new Terminal();
-        Log.d(TAG, "Rows: " + t.getRows());
+        final Terminal term = new Terminal();
+        final TerminalView view = new TerminalView(this, term);
+
+        setContentView(view);
+
+        Log.d(TAG, "Rows: " + term.getRows());
     }
 }

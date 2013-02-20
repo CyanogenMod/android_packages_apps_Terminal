@@ -58,6 +58,12 @@ static jmethodID setTermPropColorMethod;
 static jmethodID bellMethod;
 static jmethodID resizeMethod;
 
+/*
+ * Cell class
+ */
+static jclass cellClass;
+static jfieldID cellCharsField;
+
 
 /*
  * Terminal session
@@ -69,9 +75,12 @@ public:
     ~Terminal();
 
     size_t write(const char *bytes, size_t len);
-    void resize(short unsigned int rows, short unsigned int cols);
+
+    int resize(short unsigned int rows, short unsigned int cols);
+    int getCell(VTermPos pos, VTermScreenCell* cell);
 
     int getRows() const;
+    int getCols() const;
 
     jobject getCallbacks() const;
 
@@ -80,10 +89,9 @@ private:
     VTerm *mVt;
     VTermScreen *mVts;
 
+    jobject mCallbacks;
     short unsigned int mRows;
     short unsigned int mCols;
-
-    jobject mCallbacks;
 };
 
 static JNIEnv* getEnv() {
@@ -297,15 +305,25 @@ size_t Terminal::write(const char *bytes, size_t len) {
     return ::write(mMasterFd, bytes, len);
 }
 
-void Terminal::resize(short unsigned int rows, short unsigned int cols) {
+int Terminal::resize(short unsigned int rows, short unsigned int cols) {
+    ALOGD("resize(%d, %d)", rows, cols);
     mRows = rows;
     mCols = cols;
     struct winsize size = { rows, cols, 0, 0 };
     ioctl(mMasterFd, TIOCSWINSZ, &size);
+    return 0;
+}
+
+int Terminal::getCell(VTermPos pos, VTermScreenCell* cell) {
+    return vterm_screen_get_cell(mVts, pos, cell);
 }
 
 int Terminal::getRows() const {
     return mRows;
+}
+
+int Terminal::getCols() const {
+    return mCols;
 }
 
 jobject Terminal::getCallbacks() const {
@@ -328,10 +346,36 @@ static void com_android_terminal_Terminal_nativeWrite(JNIEnv* env,
     term->write(NULL, 0);
 }
 
-static void com_android_terminal_Terminal_nativeResize(JNIEnv* env,
+static jint com_android_terminal_Terminal_nativeResize(JNIEnv* env,
         jclass clazz, jint ptr, jint rows, jint cols) {
     Terminal* term = reinterpret_cast<Terminal*>(ptr);
-    term->resize(rows, cols);
+    return term->resize(rows, cols);
+}
+
+static jint com_android_terminal_Terminal_nativeGetCell(JNIEnv* env,
+        jclass clazz, jint ptr, jint row, jint col, jobject cell) {
+    //ALOGD("getCell(%d, %d)", row, col);
+    Terminal* term = reinterpret_cast<Terminal*>(ptr);
+
+    VTermPos pos = {
+        .row = row,
+        .col = col,
+    };
+
+    VTermScreenCell termCell;
+    memset(&termCell, 0, sizeof(VTermScreenCell));
+    int res = term->getCell(pos, &termCell);
+
+    // TODO: support full UTF-32 characters
+    // for testing, 0x00020000 should become 0xD840 0xDC00
+
+    jintArray charsArray = (jintArray)env->GetObjectField(cell, cellCharsField);
+    jint *chars = env->GetIntArrayElements(charsArray, 0);
+    chars[0] = '$';
+    chars[1] = 0x00;
+    env->ReleaseIntArrayElements(charsArray, chars, 0);
+
+    return 0;
 }
 
 static jint com_android_terminal_Terminal_nativeGetRows(JNIEnv* env, jclass clazz, jint ptr) {
@@ -339,10 +383,17 @@ static jint com_android_terminal_Terminal_nativeGetRows(JNIEnv* env, jclass claz
     return term->getRows();
 }
 
+static jint com_android_terminal_Terminal_nativeGetCols(JNIEnv* env, jclass clazz, jint ptr) {
+    Terminal* term = reinterpret_cast<Terminal*>(ptr);
+    return term->getCols();
+}
+
 static JNINativeMethod gMethods[] = {
     { "nativeInit", "(Lcom/android/terminal/TerminalCallbacks;II)I", (void*)com_android_terminal_Terminal_nativeInit },
-    { "nativeResize", "(III)", (void*)com_android_terminal_Terminal_nativeResize },
+    { "nativeResize", "(III)I", (void*)com_android_terminal_Terminal_nativeResize },
+    { "nativeGetCell", "(IIILcom/android/terminal/Terminal$Cell;)I", (void*)com_android_terminal_Terminal_nativeGetCell },
     { "nativeGetRows", "(I)I", (void*)com_android_terminal_Terminal_nativeGetRows },
+    { "nativeGetCols", "(I)I", (void*)com_android_terminal_Terminal_nativeGetCols },
 };
 
 int register_com_android_terminal_Terminal(JNIEnv* env) {
@@ -366,6 +417,11 @@ int register_com_android_terminal_Terminal(JNIEnv* env) {
             "(IIII)I");
     android::bellMethod = env->GetMethodID(terminalCallbacksClass, "bell", "()I");
     android::resizeMethod = env->GetMethodID(terminalCallbacksClass, "resize", "(II)I");
+
+    ScopedLocalRef<jclass> cellLocal(env,
+            env->FindClass("com/android/terminal/Terminal$Cell"));
+    cellClass = reinterpret_cast<jclass>(env->NewGlobalRef(cellLocal.get()));
+    cellCharsField = env->GetFieldID(cellClass, "chars", "[C");
 
     env->GetJavaVM(&gJavaVM);
 
