@@ -69,6 +69,14 @@ public class Terminal {
 
     public Terminal() {
         mNativePtr = nativeInit(mCallbacks, 25, 80);
+
+        // TODO: move all I/O into separate method; init should only be object setup
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                nativeReadLoop(mNativePtr);
+            }
+        }).start();
     }
 
     public void setClient(TerminalClient client) {
@@ -96,6 +104,7 @@ public class Terminal {
     }
 
     private static native int nativeInit(TerminalCallbacks callbacks, int rows, int cols);
+    private static native int nativeReadLoop(int ptr);
     private static native int nativeResize(int ptr, int rows, int cols);
     private static native int nativeGetCell(int ptr, int row, int col, Cell cell);
     private static native int nativeGetRows(int ptr);

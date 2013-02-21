@@ -75,6 +75,7 @@ public:
     ~Terminal();
 
     size_t write(const char *bytes, size_t len);
+    int readLoop();
 
     int resize(short unsigned int rows, short unsigned int cols);
     int getCell(VTermPos pos, VTermScreenCell* cell);
@@ -292,14 +293,17 @@ Terminal::Terminal(jobject callbacks, int rows, int cols) :
             ALOGE("failed to open stderr - %s", strerror(errno));
         }
 
-        char *shell = getenv("SHELL");
+        char *shell = "/system/bin/sh"; //getenv("SHELL");
         char *args[2] = {shell, NULL};
         execvp(shell, args);
         fprintf(stderr_save, "Cannot exec(%s) - %s\n", shell, strerror(errno));
         _exit(1);
     }
 
-    fcntl(mMasterFd, F_SETFL, fcntl(mMasterFd, F_GETFL) | O_NONBLOCK);
+    vterm_set_size(mVt, rows, cols);
+    vterm_screen_flush_damage(mVts);
+
+    vterm_screen_reset(mVts, 1);
 }
 
 Terminal::~Terminal() {
@@ -311,12 +315,40 @@ size_t Terminal::write(const char *bytes, size_t len) {
     return ::write(mMasterFd, bytes, len);
 }
 
+int Terminal::readLoop() {
+    while (1) {
+        char buffer[4096];
+        ssize_t bytes = ::read(mMasterFd, buffer, sizeof buffer);
+        ALOGD("Read %d bytes:", bytes);
+
+        if (bytes == -1 && errno == EAGAIN) {
+            continue;
+        }
+        if (bytes == 0 || (bytes == -1 && errno == EIO)) {
+            return 0;
+        }
+        if (bytes < 0) {
+            ALOGD("read() failed: %s", strerror(errno));
+            return 1;
+        }
+
+        // TODO: remove this verbose dumping
+        for (int i = 0; i < bytes; i++) {
+            ALOGD(" %02x", buffer[i]);
+        }
+
+        vterm_push_bytes(mVt, buffer, bytes);
+    }
+    return 1;
+}
+
 int Terminal::resize(short unsigned int rows, short unsigned int cols) {
     ALOGD("resize(%d, %d)", rows, cols);
     mRows = rows;
     mCols = cols;
     struct winsize size = { rows, cols, 0, 0 };
     ioctl(mMasterFd, TIOCSWINSZ, &size);
+    // TODO: vterm_set_size?
     return 0;
 }
 
@@ -352,6 +384,11 @@ static void com_android_terminal_Terminal_nativeWrite(JNIEnv* env,
     term->write(NULL, 0);
 }
 
+static jint com_android_terminal_Terminal_nativeReadLoop(JNIEnv* env, jclass clazz, jint ptr) {
+    Terminal* term = reinterpret_cast<Terminal*>(ptr);
+    return term->readLoop();
+}
+
 static jint com_android_terminal_Terminal_nativeResize(JNIEnv* env,
         jclass clazz, jint ptr, jint rows, jint cols) {
     Terminal* term = reinterpret_cast<Terminal*>(ptr);
@@ -360,7 +397,6 @@ static jint com_android_terminal_Terminal_nativeResize(JNIEnv* env,
 
 static jint com_android_terminal_Terminal_nativeGetCell(JNIEnv* env,
         jclass clazz, jint ptr, jint row, jint col, jobject cell) {
-    //ALOGD("getCell(%d, %d)", row, col);
     Terminal* term = reinterpret_cast<Terminal*>(ptr);
 
     VTermPos pos = {
@@ -372,12 +408,14 @@ static jint com_android_terminal_Terminal_nativeGetCell(JNIEnv* env,
     memset(&termCell, 0, sizeof(VTermScreenCell));
     int res = term->getCell(pos, &termCell);
 
+    //ALOGD("getCell(%d, %d, %s)", row, col, termCell.chars);
+
     // TODO: support full UTF-32 characters
     // for testing, 0x00020000 should become 0xD840 0xDC00
 
     jintArray charsArray = (jintArray)env->GetObjectField(cell, cellCharsField);
     jint *chars = env->GetIntArrayElements(charsArray, 0);
-    chars[0] = '$';
+    chars[0] = termCell.chars[0];
     chars[1] = 0x00;
     env->ReleaseIntArrayElements(charsArray, chars, 0);
 
@@ -396,6 +434,7 @@ static jint com_android_terminal_Terminal_nativeGetCols(JNIEnv* env, jclass claz
 
 static JNINativeMethod gMethods[] = {
     { "nativeInit", "(Lcom/android/terminal/TerminalCallbacks;II)I", (void*)com_android_terminal_Terminal_nativeInit },
+    { "nativeReadLoop", "(I)I", (void*)com_android_terminal_Terminal_nativeReadLoop },
     { "nativeResize", "(III)I", (void*)com_android_terminal_Terminal_nativeResize },
     { "nativeGetCell", "(IIILcom/android/terminal/Terminal$Cell;)I", (void*)com_android_terminal_Terminal_nativeGetCell },
     { "nativeGetRows", "(I)I", (void*)com_android_terminal_Terminal_nativeGetRows },
