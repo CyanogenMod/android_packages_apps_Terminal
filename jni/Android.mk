@@ -4,7 +4,8 @@ include $(CLEAR_VARS)
 
 LOCAL_SRC_FILES := \
     jni_init.cpp \
-    com_android_terminal_Terminal.cpp
+    com_android_terminal_Terminal.cpp \
+	forkpty.cpp
 
 LOCAL_C_INCLUDES += \
     external/libvterm/include \
