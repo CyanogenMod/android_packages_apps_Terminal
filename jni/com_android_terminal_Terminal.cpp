@@ -17,16 +17,17 @@
 #define LOG_TAG "Terminal"
 
 #include <utils/Log.h>
+#include "forkpty.h"
 #include "jni.h"
 #include "JNIHelp.h"
 #include <ScopedLocalRef.h>
 
+#include <fcntl.h>
+#include <stdio.h>
 #include <termios.h>
-#include <util.h>
-//#include <pty.h>
-#include <utmp.h>
 #include <unistd.h>
-//#include <stdlib.h>
+#include <util.h>
+#include <utmp.h>
 
 #include <vterm.h>
 
@@ -63,7 +64,6 @@ static jmethodID resizeMethod;
  */
 static jclass cellClass;
 static jfieldID cellCharsField;
-
 
 /*
  * Terminal session
@@ -254,46 +254,52 @@ Terminal::Terminal(jobject callbacks, int rows, int cols) :
         /* c_cc later */
     };
 
-//    cfsetspeed(&termios, 38400);
-//
-//    termios.c_cc[VINTR]    = 0x1f & 'C';
-//    termios.c_cc[VQUIT]    = 0x1f & '\\';
-//    termios.c_cc[VERASE]   = 0x7f;
-//    termios.c_cc[VKILL]    = 0x1f & 'U';
-//    termios.c_cc[VEOF]     = 0x1f & 'D';
-//    termios.c_cc[VEOL]     = _POSIX_VDISABLE;
-//    termios.c_cc[VEOL2]    = _POSIX_VDISABLE;
-//    termios.c_cc[VSTART]   = 0x1f & 'Q';
-//    termios.c_cc[VSTOP]    = 0x1f & 'S';
-//    termios.c_cc[VSUSP]    = 0x1f & 'Z';
-//    termios.c_cc[VREPRINT] = 0x1f & 'R';
-//    termios.c_cc[VWERASE]  = 0x1f & 'W';
-//    termios.c_cc[VLNEXT]   = 0x1f & 'V';
-//    termios.c_cc[VMIN]     = 1;
-//    termios.c_cc[VTIME]    = 0;
-//
-//    struct winsize size = { mRows, mCols, 0, 0 };
-//
-//    pid_t kid = forkpty(&mMasterFd, NULL, &termios, &size);
-//    if(kid == 0) {
-//        /* Restore the ISIG signals back to defaults */
-//        signal(SIGINT, SIG_DFL);
-//        signal(SIGQUIT, SIG_DFL);
-//        signal(SIGSTOP, SIG_DFL);
-//        signal(SIGCONT, SIG_DFL);
-//
-//        gchar *term = g_strdup_printf("TERM=%s", CONF_term);
-//        putenv(term);
-//        /* Do not free 'term', it is part of the environment */
-//
-//        char *shell = getenv("SHELL");
-//        char *args[2] = {shell, NULL};
-//        execvp(shell, args);
-//        fprintf(stderr_save, "Cannot exec(%s) - %s\n", shell, strerror(errno));
-//        _exit(1);
-//    }
-//
-//    fcntl(mMasterFd, F_SETFL, fcntl(mMasterFd, F_GETFL) | O_NONBLOCK);
+    cfsetispeed(&termios, B38400);
+    cfsetospeed(&termios, B38400);
+
+    termios.c_cc[VINTR]    = 0x1f & 'C';
+    termios.c_cc[VQUIT]    = 0x1f & '\\';
+    termios.c_cc[VERASE]   = 0x7f;
+    termios.c_cc[VKILL]    = 0x1f & 'U';
+    termios.c_cc[VEOF]     = 0x1f & 'D';
+    termios.c_cc[VSTART]   = 0x1f & 'Q';
+    termios.c_cc[VSTOP]    = 0x1f & 'S';
+    termios.c_cc[VSUSP]    = 0x1f & 'Z';
+    termios.c_cc[VREPRINT] = 0x1f & 'R';
+    termios.c_cc[VWERASE]  = 0x1f & 'W';
+    termios.c_cc[VLNEXT]   = 0x1f & 'V';
+    termios.c_cc[VMIN]     = 1;
+    termios.c_cc[VTIME]    = 0;
+
+    struct winsize size = { mRows, mCols, 0, 0 };
+
+    int stderr_save_fd = dup(2);
+    if (stderr_save_fd < 0) {
+        ALOGE("failed to dup stderr - %s", strerror(errno));
+    }
+
+    pid_t kid = forkpty(&mMasterFd, NULL, &termios, &size);
+    if (kid == 0) {
+        /* Restore the ISIG signals back to defaults */
+        signal(SIGINT, SIG_DFL);
+        signal(SIGQUIT, SIG_DFL);
+        signal(SIGSTOP, SIG_DFL);
+        signal(SIGCONT, SIG_DFL);
+
+        FILE *stderr_save = fdopen(stderr_save_fd, "a");
+
+        if (!stderr_save) {
+            ALOGE("failed to open stderr - %s", strerror(errno));
+        }
+
+        char *shell = getenv("SHELL");
+        char *args[2] = {shell, NULL};
+        execvp(shell, args);
+        fprintf(stderr_save, "Cannot exec(%s) - %s\n", shell, strerror(errno));
+        _exit(1);
+    }
+
+    fcntl(mMasterFd, F_SETFL, fcntl(mMasterFd, F_GETFL) | O_NONBLOCK);
 }
 
 Terminal::~Terminal() {
