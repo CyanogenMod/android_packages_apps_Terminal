@@ -26,9 +26,14 @@ public class Terminal {
         System.loadLibrary("jni_terminal");
     }
 
-    public static class Cell {
-        char[] chars = new char[2];
-        int width = 1;
+    /**
+     * Represents a run of one or more {@code VTermScreenCell} which all have
+     * the same formatting.
+     */
+    public static class CellRun {
+        char[] data;
+        int dataSize;
+        int colSize;
 
         boolean bold;
         int underline;
@@ -97,8 +102,8 @@ public class Terminal {
         return nativeGetCols(mNativePtr);
     }
 
-    public void getCell(int row, int col, Cell cell) {
-        if (nativeGetCell(mNativePtr, row, col, cell) != 0) {
+    public void getCellRun(int row, int col, CellRun run) {
+        if (nativeGetCellRun(mNativePtr, row, col, run) != 0) {
             throw new IllegalStateException("getCell failed");
         }
     }
@@ -106,7 +111,7 @@ public class Terminal {
     private static native int nativeInit(TerminalCallbacks callbacks, int rows, int cols);
     private static native int nativeReadLoop(int ptr);
     private static native int nativeResize(int ptr, int rows, int cols);
-    private static native int nativeGetCell(int ptr, int row, int col, Cell cell);
+    private static native int nativeGetCellRun(int ptr, int row, int col, CellRun run);
     private static native int nativeGetRows(int ptr);
     private static native int nativeGetCols(int ptr);
 }
