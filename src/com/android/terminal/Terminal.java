@@ -68,6 +68,20 @@ public class Terminal {
         }
 
         @Override
+        public int moveRect(int destStartRow, int destEndRow, int destStartCol, int destEndCol,
+                int srcStartRow, int srcEndRow, int srcStartCol, int srcEndCol) {
+            // TODO: arg, this isn't right
+            if (mClient != null) {
+                final int startRow = Math.min(destStartRow, srcStartRow);
+                final int endRow = Math.max(destEndRow, srcEndRow);
+                final int startCol = Math.min(destStartCol, srcStartCol);
+                final int endCol = Math.max(destEndCol, srcEndCol);
+                mClient.damage(startRow, endRow, startCol, endCol);
+            }
+            return 1;
+        }
+
+        @Override
         public int bell() {
             if (mClient != null) {
                 mClient.bell();
@@ -97,6 +111,12 @@ public class Terminal {
         mClient = client;
     }
 
+    public void flushDamage() {
+        if (nativeFlushDamage(mNativePtr) != 0) {
+            throw new IllegalStateException("flushDamage failed");
+        }
+    }
+
     public void resize(int rows, int cols) {
         if (nativeResize(mNativePtr, rows, cols) != 0) {
             throw new IllegalStateException("resize failed");
@@ -120,6 +140,7 @@ public class Terminal {
     private static native int nativeInit(TerminalCallbacks callbacks, int rows, int cols);
     private static native int nativeRun(int ptr);
 
+    private static native int nativeFlushDamage(int ptr);
     private static native int nativeResize(int ptr, int rows, int cols);
     private static native int nativeGetCellRun(int ptr, int row, int col, CellRun run);
     private static native int nativeGetRows(int ptr);

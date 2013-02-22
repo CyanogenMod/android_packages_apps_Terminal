@@ -27,6 +27,7 @@ import android.os.SystemClock;
 import android.util.Log;
 import android.view.View;
 
+import com.android.terminal.Terminal.CellRun;
 import com.android.terminal.Terminal.TerminalClient;
 
 /**
@@ -35,15 +36,25 @@ import com.android.terminal.Terminal.TerminalClient;
 public class TerminalView extends View {
     private static final String TAG = "Terminal";
 
+    private static final int MAX_RUN_LENGTH = 128;
+
     private final Context mContext;
     private final Terminal mTerm;
 
     private final Paint mBgPaint = new Paint();
     private final Paint mTextPaint = new Paint();
 
+    /** Run of cells used when drawing */
+    private final CellRun mRun;
+    /** Screen coordinates to draw chars into */
+    private final float[] mPos;
+
     private int mCharTop;
     private int mCharWidth;
     private int mCharHeight;
+
+    // TODO: for atomicity we might need to snapshot runs when processing
+    // callbacks driven by vterm thread
 
     private TerminalClient mClient = new TerminalClient() {
         @Override
@@ -67,6 +78,13 @@ public class TerminalView extends View {
         super(context);
         mContext = context;
         mTerm = term;
+
+        mRun = new Terminal.CellRun();
+        mRun.data = new char[MAX_RUN_LENGTH];
+
+        // Positions of each possible cell
+        // TODO: make sure this works with surrogate pairs
+        mPos = new float[MAX_RUN_LENGTH * 2];
 
         setBackgroundColor(Color.BLACK);
         setTextSize(20);
@@ -105,6 +123,12 @@ public class TerminalView extends View {
         mCharWidth = (int) Math.ceil(widths[0]);
         mCharHeight = (int) Math.ceil(fm.descent - fm.top);
 
+        // Update drawing positions
+        for (int i = 0; i < MAX_RUN_LENGTH; i++) {
+            mPos[i * 2] = i * mCharWidth;
+            mPos[(i * 2) + 1] = -mCharTop;
+        }
+
         updateTerminalSize();
     }
 
@@ -117,6 +141,7 @@ public class TerminalView extends View {
             final int rows = getHeight() / mCharHeight;
             final int cols = getWidth() / mCharWidth;
             mTerm.resize(rows, cols);
+            mTerm.flushDamage();
         }
     }
 
@@ -127,8 +152,6 @@ public class TerminalView extends View {
             updateTerminalSize();
         }
     }
-    
-    private static final int MAX_RUN_LENGTH = 128;
 
     @Override
     protected void onDraw(Canvas canvas) {
@@ -147,16 +170,8 @@ public class TerminalView extends View {
         final int startCol = dirty.left / mCharWidth;
         final int endCol = Math.min(dirty.right / mCharWidth, cols - 1);
 
-        final Terminal.CellRun run = new Terminal.CellRun();
-        run.data = new char[MAX_RUN_LENGTH];
-
-        // Positions of each possible cell
-        // TODO: make sure this works with surrogate pairs
-        final float[] pos = new float[MAX_RUN_LENGTH * 2];
-        for (int i = 0; i < MAX_RUN_LENGTH; i++) {
-            pos[i * 2] = i * mCharWidth;
-            pos[(i * 2) + 1] = -mCharTop;
-        }
+        final CellRun run = mRun;
+        final float[] pos = mPos;
 
         for (int row = startRow; row <= endRow; row++) {
             for (int col = startCol; col <= endCol;) {
@@ -181,6 +196,8 @@ public class TerminalView extends View {
                 col += run.colSize;
             }
         }
+
+        mTerm.flushDamage();
 
         final long delta = SystemClock.elapsedRealtime() - start;
         Log.d(TAG, "onDraw() took " + delta + "ms");

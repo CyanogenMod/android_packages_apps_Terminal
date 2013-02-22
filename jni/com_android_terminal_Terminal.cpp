@@ -34,6 +34,8 @@
 
 #include <string.h>
 
+#define USE_TEST_SHELL true
+
 namespace android {
 
 /*
@@ -79,7 +81,9 @@ public:
 
     size_t write(const char *bytes, size_t len);
 
+    int flushDamage();
     int resize(short unsigned int rows, short unsigned int cols);
+
     int getCell(VTermPos pos, VTermScreenCell* cell);
 
     int getRows() const;
@@ -245,7 +249,8 @@ Terminal::Terminal(jobject callbacks, int rows, int cols) :
     mVts = vterm_obtain_screen(mVt);
     vterm_screen_enable_altscreen(mVts, 1);
     vterm_screen_set_callbacks(mVts, &cb, this);
-    vterm_screen_set_damage_merge(mVts, VTERM_DAMAGE_SCROLL);
+    // TODO: switch back to VTERM_DAMAGE_SCROLL?
+    vterm_screen_set_damage_merge(mVts, VTERM_DAMAGE_CELL);
     vterm_screen_reset(mVts, 1);
 }
 
@@ -304,7 +309,12 @@ int Terminal::run() {
         }
 
         char *shell = "/system/bin/sh"; //getenv("SHELL");
+#ifdef USE_TEST_SHELL
+        char *args[4] = {shell, "-c", "x=1; while true; do echo \"stop echoing yourself! ($x)\"; x=$(( $x + 1 )); sleep 0.5; done", NULL};
+#else
         char *args[2] = {shell, NULL};
+#endif
+
         execvp(shell, args);
         fprintf(stderr_save, "Cannot exec(%s) - %s\n", shell, strerror(errno));
         _exit(1);
@@ -332,6 +342,11 @@ int Terminal::run() {
 
 size_t Terminal::write(const char *bytes, size_t len) {
     return ::write(mMasterFd, bytes, len);
+}
+
+int Terminal::flushDamage() {
+    vterm_screen_flush_damage(mVts);
+    return 0;
 }
 
 int Terminal::resize(short unsigned int rows, short unsigned int cols) {
@@ -373,6 +388,11 @@ static jint com_android_terminal_Terminal_nativeInit(JNIEnv* env, jclass clazz, 
 static jint com_android_terminal_Terminal_nativeRun(JNIEnv* env, jclass clazz, jint ptr) {
     Terminal* term = reinterpret_cast<Terminal*>(ptr);
     return term->run();
+}
+
+static jint com_android_terminal_Terminal_nativeFlushDamage(JNIEnv* env, jclass clazz, jint ptr) {
+    Terminal* term = reinterpret_cast<Terminal*>(ptr);
+    return term->flushDamage();
 }
 
 static jint com_android_terminal_Terminal_nativeResize(JNIEnv* env,
@@ -445,6 +465,7 @@ static jint com_android_terminal_Terminal_nativeGetCols(JNIEnv* env, jclass claz
 static JNINativeMethod gMethods[] = {
     { "nativeInit", "(Lcom/android/terminal/TerminalCallbacks;II)I", (void*)com_android_terminal_Terminal_nativeInit },
     { "nativeRun", "(I)I", (void*)com_android_terminal_Terminal_nativeRun },
+    { "nativeFlushDamage", "(I)I", (void*)com_android_terminal_Terminal_nativeFlushDamage },
     { "nativeResize", "(III)I", (void*)com_android_terminal_Terminal_nativeResize },
     { "nativeGetCellRun", "(IIILcom/android/terminal/Terminal$CellRun;)I", (void*)com_android_terminal_Terminal_nativeGetCellRun },
     { "nativeGetRows", "(I)I", (void*)com_android_terminal_Terminal_nativeGetRows },
