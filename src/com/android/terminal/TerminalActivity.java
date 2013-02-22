@@ -28,6 +28,8 @@ public class TerminalActivity extends Activity {
         super.onCreate(savedInstanceState);
 
         final Terminal term = new Terminal();
+        term.start();
+
         final TerminalView view = new TerminalView(this, term);
 
         setContentView(view);

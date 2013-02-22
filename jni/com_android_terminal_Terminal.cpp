@@ -20,7 +20,8 @@
 #include "forkpty.h"
 #include "jni.h"
 #include "JNIHelp.h"
-#include <ScopedLocalRef.h>
+#include "ScopedLocalRef.h"
+#include "ScopedPrimitiveArray.h"
 
 #include <fcntl.h>
 #include <stdio.h>
@@ -74,8 +75,9 @@ public:
     Terminal(jobject callbacks, int rows, int cols);
     ~Terminal();
 
+    int run();
+
     size_t write(const char *bytes, size_t len);
-    int readLoop();
 
     int resize(short unsigned int rows, short unsigned int cols);
     int getCell(VTermPos pos, VTermScreenCell* cell);
@@ -244,7 +246,15 @@ Terminal::Terminal(jobject callbacks, int rows, int cols) :
     vterm_screen_enable_altscreen(mVts, 1);
     vterm_screen_set_callbacks(mVts, &cb, this);
     vterm_screen_set_damage_merge(mVts, VTERM_DAMAGE_SCROLL);
+    vterm_screen_reset(mVts, 1);
+}
 
+Terminal::~Terminal() {
+    close(mMasterFd);
+    vterm_free(mVt);
+}
+
+int Terminal::run() {
     /* None of the docs about termios explain how to construct a new one of
      * these, so this is largely a guess */
     struct termios termios = {
@@ -300,46 +310,28 @@ Terminal::Terminal(jobject callbacks, int rows, int cols) :
         _exit(1);
     }
 
-    vterm_set_size(mVt, rows, cols);
-    vterm_screen_flush_damage(mVts);
-
-    vterm_screen_reset(mVts, 1);
-}
-
-Terminal::~Terminal() {
-    close(mMasterFd);
-    vterm_free(mVt);
-}
-
-size_t Terminal::write(const char *bytes, size_t len) {
-    return ::write(mMasterFd, bytes, len);
-}
-
-int Terminal::readLoop() {
     while (1) {
         char buffer[4096];
         ssize_t bytes = ::read(mMasterFd, buffer, sizeof buffer);
         ALOGD("Read %d bytes:", bytes);
 
-        if (bytes == -1 && errno == EAGAIN) {
-            continue;
+        if (bytes == 0) {
+            ALOGD("read() found EOF");
+            break;
         }
-        if (bytes == 0 || (bytes == -1 && errno == EIO)) {
-            return 0;
-        }
-        if (bytes < 0) {
-            ALOGD("read() failed: %s", strerror(errno));
+        if (bytes == -1) {
+            ALOGE("read() failed: %s", strerror(errno));
             return 1;
-        }
-
-        // TODO: remove this verbose dumping
-        for (int i = 0; i < bytes; i++) {
-            ALOGD(" %02x", buffer[i]);
         }
 
         vterm_push_bytes(mVt, buffer, bytes);
     }
+
     return 1;
+}
+
+size_t Terminal::write(const char *bytes, size_t len) {
+    return ::write(mMasterFd, bytes, len);
 }
 
 int Terminal::resize(short unsigned int rows, short unsigned int cols) {
@@ -378,16 +370,9 @@ static jint com_android_terminal_Terminal_nativeInit(JNIEnv* env, jclass clazz, 
     return reinterpret_cast<jint>(new Terminal(env->NewGlobalRef(callbacks), rows, cols));
 }
 
-static void com_android_terminal_Terminal_nativeWrite(JNIEnv* env,
-        jclass clazz, jint ptr) {
+static jint com_android_terminal_Terminal_nativeRun(JNIEnv* env, jclass clazz, jint ptr) {
     Terminal* term = reinterpret_cast<Terminal*>(ptr);
-    // const char *bytes, size_t len
-    term->write(NULL, 0);
-}
-
-static jint com_android_terminal_Terminal_nativeReadLoop(JNIEnv* env, jclass clazz, jint ptr) {
-    Terminal* term = reinterpret_cast<Terminal*>(ptr);
-    return term->readLoop();
+    return term->run();
 }
 
 static jint com_android_terminal_Terminal_nativeResize(JNIEnv* env,
@@ -401,8 +386,10 @@ static jint com_android_terminal_Terminal_nativeGetCellRun(JNIEnv* env,
     Terminal* term = reinterpret_cast<Terminal*>(ptr);
 
     jcharArray dataArray = (jcharArray) env->GetObjectField(run, cellRunDataField);
-    jchar* data = env->GetCharArrayElements(dataArray, 0);
-    int dataLen = env->GetArrayLength(dataArray);
+    ScopedCharArrayRW data(env, dataArray);
+    if (data.get() == NULL) {
+        return -1;
+    }
 
     VTermScreenCell cell;
     memset(&cell, 0, sizeof(VTermScreenCell));
@@ -412,8 +399,8 @@ static jint com_android_terminal_Terminal_nativeGetCellRun(JNIEnv* env,
         .col = col,
     };
 
-    int dataSize = 0;
-    int colSize = 0;
+    unsigned int dataSize = 0;
+    unsigned int colSize = 0;
     while (pos.col < term->getCols()) {
         int res = term->getCell(pos, &cell);
 
@@ -426,10 +413,10 @@ static jint com_android_terminal_Terminal_nativeGetCellRun(JNIEnv* env,
 
         // TODO: support full UTF-32 characters
         // for testing, 0x00020000 should become 0xD840 0xDC00
-        int size = 1;
+        unsigned int size = 1;
 
         // Only include cell chars if they fit into run
-        if (dataSize + size <= dataLen) {
+        if (dataSize + size <= data.size()) {
             data[dataSize] = cell.chars[0];
             dataSize += size;
             colSize += cell.width;
@@ -439,7 +426,6 @@ static jint com_android_terminal_Terminal_nativeGetCellRun(JNIEnv* env,
         }
     }
 
-    env->ReleaseCharArrayElements(dataArray, data, 0);
     env->SetIntField(run, cellRunDataSizeField, dataSize);
     env->SetIntField(run, cellRunColSizeField, colSize);
 
@@ -458,7 +444,7 @@ static jint com_android_terminal_Terminal_nativeGetCols(JNIEnv* env, jclass claz
 
 static JNINativeMethod gMethods[] = {
     { "nativeInit", "(Lcom/android/terminal/TerminalCallbacks;II)I", (void*)com_android_terminal_Terminal_nativeInit },
-    { "nativeReadLoop", "(I)I", (void*)com_android_terminal_Terminal_nativeReadLoop },
+    { "nativeRun", "(I)I", (void*)com_android_terminal_Terminal_nativeRun },
     { "nativeResize", "(III)I", (void*)com_android_terminal_Terminal_nativeResize },
     { "nativeGetCellRun", "(IIILcom/android/terminal/Terminal$CellRun;)I", (void*)com_android_terminal_Terminal_nativeGetCellRun },
     { "nativeGetRows", "(I)I", (void*)com_android_terminal_Terminal_nativeGetRows },

@@ -22,6 +22,8 @@ import android.graphics.Color;
  * Single terminal session backed by a pseudo terminal on the local device.
  */
 public class Terminal {
+    private static final String TAG = "Terminal";
+
     static {
         System.loadLibrary("jni_terminal");
     }
@@ -52,6 +54,8 @@ public class Terminal {
     }
 
     private final int mNativePtr;
+    private final Thread mThread;
+
     private TerminalClient mClient;
 
     private final TerminalCallbacks mCallbacks = new TerminalCallbacks() {
@@ -74,14 +78,19 @@ public class Terminal {
 
     public Terminal() {
         mNativePtr = nativeInit(mCallbacks, 25, 80);
-
-        // TODO: move all I/O into separate method; init should only be object setup
-        new Thread(new Runnable() {
+        mThread = new Thread(TAG) {
             @Override
             public void run() {
-                nativeReadLoop(mNativePtr);
+                nativeRun(mNativePtr);
             }
-        }).start();
+        };
+    }
+
+    /**
+     * Start thread which internally forks and manages the pseudo terminal.
+     */
+    public void start() {
+        mThread.start();
     }
 
     public void setClient(TerminalClient client) {
@@ -109,7 +118,8 @@ public class Terminal {
     }
 
     private static native int nativeInit(TerminalCallbacks callbacks, int rows, int cols);
-    private static native int nativeReadLoop(int ptr);
+    private static native int nativeRun(int ptr);
+
     private static native int nativeResize(int ptr, int rows, int cols);
     private static native int nativeGetCellRun(int ptr, int row, int col, CellRun run);
     private static native int nativeGetRows(int ptr);
