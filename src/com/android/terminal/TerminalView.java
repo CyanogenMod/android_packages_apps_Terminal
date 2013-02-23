@@ -189,8 +189,8 @@ public class TerminalView extends View {
             for (int col = startCol; col <= endCol;) {
                 mTerm.getCellRun(row, col, run);
 
-                mBgPaint.setColor(run.bgColor);
-                mTextPaint.setColor(run.fgColor);
+                mBgPaint.setColor(run.bg);
+                mTextPaint.setColor(run.fg);
 
                 final int y = row * mCharHeight;
                 final int x = col * mCharWidth;

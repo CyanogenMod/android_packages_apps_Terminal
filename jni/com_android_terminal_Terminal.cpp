@@ -69,6 +69,9 @@ static jclass cellRunClass;
 static jfieldID cellRunDataField;
 static jfieldID cellRunDataSizeField;
 static jfieldID cellRunColSizeField;
+static jfieldID cellRunFgField;
+static jfieldID cellRunBgField;
+
 /*
  * Terminal session
  */
@@ -229,7 +232,7 @@ static int term_resize(int rows, int cols, void *user) {
         return 0;
     }
 
-    return env->CallIntMethod(term->getCallbacks(), resizeMethod);
+    return env->CallIntMethod(term->getCallbacks(), resizeMethod, rows, cols);
 }
 
 static VTermScreenCallbacks cb = {
@@ -313,7 +316,7 @@ int Terminal::run() {
 
         char *shell = "/system/bin/sh"; //getenv("SHELL");
 #ifdef USE_TEST_SHELL
-        char *args[4] = {shell, "-c", "x=1; while true; do echo \"stop echoing yourself! ($x)\"; x=$(( $x + 1 )); sleep 0.5; done", NULL};
+        char *args[4] = {shell, "-c", "x=1; c=0; while true; do echo -e \"stop \e[00;3${c}mechoing\e[00m yourself! ($x)\"; x=$(( $x + 1 )); c=$((($c+1)%7)); sleep 0.5; done", NULL};
 #else
         char *args[2] = {shell, NULL};
 #endif
@@ -323,6 +326,7 @@ int Terminal::run() {
         _exit(1);
     }
 
+    ALOGD("entering read() loop");
     while (1) {
         char buffer[4096];
         ssize_t bytes = ::read(mMasterFd, buffer, sizeof buffer);
@@ -356,12 +360,16 @@ int Terminal::flushDamage() {
 
 int Terminal::resize(short unsigned int rows, short unsigned int cols) {
     ALOGD("resize(%d, %d)", rows, cols);
-    // TODO: wait for resize event to propegate back from shell?
+
     mRows = rows;
     mCols = cols;
+
     struct winsize size = { rows, cols, 0, 0 };
     ioctl(mMasterFd, TIOCSWINSZ, &size);
-    // TODO: vterm_set_size?
+
+    vterm_set_size(mVt, rows, cols);
+    vterm_screen_flush_damage(mVts);
+
     return 0;
 }
 
@@ -406,6 +414,21 @@ static jint com_android_terminal_Terminal_nativeResize(JNIEnv* env,
     return term->resize(rows, cols);
 }
 
+static int toArgb(VTermColor* color) {
+    return 0xff << 24 | color->red << 16 | color->green << 8 | color->blue;
+}
+
+static bool isCellStyleEqual(VTermScreenCell* a, VTermScreenCell* b) {
+    // TODO: check other attrs beyond just color
+    if (toArgb(&a->fg) != toArgb(&b->fg)) {
+        return false;
+    }
+    if (toArgb(&a->bg) != toArgb(&b->bg)) {
+        return false;
+    }
+    return true;
+}
+
 static jint com_android_terminal_Terminal_nativeGetCellRun(JNIEnv* env,
         jclass clazz, jint ptr, jint row, jint col, jobject run) {
     Terminal* term = reinterpret_cast<Terminal*>(ptr);
@@ -416,7 +439,8 @@ static jint com_android_terminal_Terminal_nativeGetCellRun(JNIEnv* env,
         return -1;
     }
 
-    VTermScreenCell cell;
+    VTermScreenCell prevCell, cell;
+    memset(&prevCell, 0, sizeof(VTermScreenCell));
     memset(&cell, 0, sizeof(VTermScreenCell));
 
     VTermPos pos = {
@@ -429,7 +453,15 @@ static jint com_android_terminal_Terminal_nativeGetCellRun(JNIEnv* env,
     while (pos.col < term->getCols()) {
         int res = term->getCell(pos, &cell);
 
-        // TODO: terminate this loop once text style changes
+        if (colSize == 0) {
+            env->SetIntField(run, cellRunFgField, toArgb(&cell.fg));
+            env->SetIntField(run, cellRunBgField, toArgb(&cell.bg));
+        } else {
+            if (!isCellStyleEqual(&cell, &prevCell)) {
+                break;
+            }
+        }
+        memcpy(&prevCell, &cell, sizeof(VTermScreenCell));
 
         // TODO: remove this once terminal is resized
         if (cell.width == 0) {
@@ -505,6 +537,8 @@ int register_com_android_terminal_Terminal(JNIEnv* env) {
     cellRunDataField = env->GetFieldID(cellRunClass, "data", "[C");
     cellRunDataSizeField = env->GetFieldID(cellRunClass, "dataSize", "I");
     cellRunColSizeField = env->GetFieldID(cellRunClass, "colSize", "I");
+    cellRunFgField = env->GetFieldID(cellRunClass, "fg", "I");
+    cellRunBgField = env->GetFieldID(cellRunClass, "bg", "I");
 
     env->GetJavaVM(&gJavaVM);
 

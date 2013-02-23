@@ -44,8 +44,8 @@ public class Terminal {
         boolean strike;
         int font;
 
-        int fgColor = Color.RED;
-        int bgColor = Color.BLUE;
+        int fg = Color.RED;
+        int bg = Color.BLUE;
     }
 
     public interface TerminalClient {
