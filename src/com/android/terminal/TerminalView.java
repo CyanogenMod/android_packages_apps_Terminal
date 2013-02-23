@@ -35,11 +35,11 @@ import com.android.terminal.Terminal.TerminalClient;
  */
 public class TerminalView extends View {
     private static final String TAG = "Terminal";
+    private static final boolean LOGD = true;
 
     private static final int MAX_RUN_LENGTH = 128;
 
     private final Context mContext;
-    private final Terminal mTerm;
 
     private final Paint mBgPaint = new Paint();
     private final Paint mTextPaint = new Paint();
@@ -48,6 +48,8 @@ public class TerminalView extends View {
     private final CellRun mRun;
     /** Screen coordinates to draw chars into */
     private final float[] mPos;
+
+    private Terminal mTerm;
 
     private int mCharTop;
     private int mCharWidth;
@@ -59,7 +61,7 @@ public class TerminalView extends View {
     private TerminalClient mClient = new TerminalClient() {
         @Override
         public void damage(int startRow, int endRow, int startCol, int endCol) {
-            Log.d(TAG, "damage(" + startRow + ", " + endRow + ", " + startCol + ", " + endCol + ")");
+            if (LOGD) Log.d(TAG, "damage(" + startRow + ", " + endRow + ", " + startCol + ", " + endCol + ")");
 
             // Invalidate region on screen
             final int top = startRow * mCharHeight;
@@ -86,10 +88,9 @@ public class TerminalView extends View {
         }
     };
 
-    public TerminalView(Context context, Terminal term) {
+    public TerminalView(Context context) {
         super(context);
         mContext = context;
-        mTerm = term;
 
         mRun = new Terminal.CellRun();
         mRun.data = new char[MAX_RUN_LENGTH];
@@ -110,20 +111,37 @@ public class TerminalView extends View {
         });
     }
 
+    public void setTerminal(Terminal term) {
+        final Terminal orig = mTerm;
+        if (orig != null) {
+            orig.setClient(null);
+        }
+        mTerm = term;
+        if (term != null) {
+            term.setClient(mClient);
+        }
+        updateTerminalSize();
+    }
+
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
-        mTerm.setClient(mClient);
+        if (mTerm != null) {
+            mTerm.setClient(mClient);
+        }
     }
 
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
-        mTerm.setClient(null);
+        if (mTerm != null) {
+            mTerm.setClient(null);
+        }
     }
 
     public void setTextSize(float textSize) {
         mTextPaint.setTypeface(Typeface.MONOSPACE);
+        mTextPaint.setAntiAlias(true);
         mTextPaint.setTextSize(textSize);
 
         // Read metrics to get exact pixel dimensions
@@ -149,11 +167,10 @@ public class TerminalView extends View {
      * and request that {@link Terminal} change to that size.
      */
     public void updateTerminalSize() {
-        if (getWidth() > 0 && getHeight() > 0) {
+        if (getWidth() > 0 && getHeight() > 0 && mTerm != null) {
             final int rows = getHeight() / mCharHeight;
             final int cols = getWidth() / mCharWidth;
             mTerm.resize(rows, cols);
-            mTerm.flushDamage();
         }
     }
 
@@ -168,6 +185,12 @@ public class TerminalView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
+
+        if (mTerm == null) {
+            Log.w(TAG, "onDraw() without a terminal");
+            canvas.drawColor(Color.MAGENTA);
+            return;
+        }
 
         final long start = SystemClock.elapsedRealtime();
 
@@ -210,6 +233,6 @@ public class TerminalView extends View {
         }
 
         final long delta = SystemClock.elapsedRealtime() - start;
-        Log.d(TAG, "onDraw() took " + delta + "ms");
+        if (LOGD) Log.d(TAG, "onDraw() took " + delta + "ms");
     }
 }

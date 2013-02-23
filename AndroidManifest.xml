@@ -16,14 +16,19 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
         package="com.android.terminal">
 
-    <application android:label="@string/app_label">
+    <application
+        android:label="@string/app_label"
+        android:persistent="true">
+
         <activity android:name=".TerminalActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-         </activity>
+        </activity>
+
+        <service android:name=".TerminalService" />
     </application>
 
 </manifest>

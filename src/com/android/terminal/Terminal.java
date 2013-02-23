@@ -24,6 +24,8 @@ import android.graphics.Color;
 public class Terminal {
     private static final String TAG = "Terminal";
 
+    private static int sNumber = 0;
+
     static {
         System.loadLibrary("jni_terminal");
     }
@@ -58,6 +60,8 @@ public class Terminal {
     private final int mNativePtr;
     private final Thread mThread;
 
+    private String mTitle;
+
     private TerminalClient mClient;
 
     private final TerminalCallbacks mCallbacks = new TerminalCallbacks() {
@@ -90,6 +94,7 @@ public class Terminal {
 
     public Terminal() {
         mNativePtr = nativeInit(mCallbacks, 25, 80);
+        mTitle = TAG + " " + sNumber++;
         mThread = new Thread(TAG) {
             @Override
             public void run() {
@@ -103,6 +108,12 @@ public class Terminal {
      */
     public void start() {
         mThread.start();
+    }
+
+    public void stop() {
+        if (nativeStop(mNativePtr) != 0) {
+            throw new IllegalStateException("stop failed");
+        }
     }
 
     public void setClient(TerminalClient client) {
@@ -135,8 +146,14 @@ public class Terminal {
         }
     }
 
+    public String getTitle() {
+        // TODO: hook up to title passed through termprop
+        return mTitle;
+    }
+
     private static native int nativeInit(TerminalCallbacks callbacks, int rows, int cols);
     private static native int nativeRun(int ptr);
+    private static native int nativeStop(int ptr);
 
     private static native int nativeFlushDamage(int ptr);
     private static native int nativeResize(int ptr, int rows, int cols);

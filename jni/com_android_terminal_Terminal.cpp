@@ -34,7 +34,9 @@
 
 #include <string.h>
 
-#define USE_TEST_SHELL true
+#define USE_TEST_SHELL 1
+#define DEBUG_CALLBACKS 0
+#define DEBUG_IO 0
 
 namespace android {
 
@@ -81,6 +83,7 @@ public:
     ~Terminal();
 
     int run();
+    int stop();
 
     size_t write(const char *bytes, size_t len);
 
@@ -102,6 +105,7 @@ private:
     jobject mCallbacks;
     short unsigned int mRows;
     short unsigned int mCols;
+    bool mStopped;
 };
 
 static JNIEnv* getEnv() {
@@ -120,7 +124,9 @@ static JNIEnv* getEnv() {
 
 static int term_damage(VTermRect rect, void *user) {
     Terminal* term = reinterpret_cast<Terminal*>(user);
+#if DEBUG_CALLBACKS
     ALOGW("term_damage");
+#endif
 
     JNIEnv* env = getEnv();
     if (env == NULL) {
@@ -134,7 +140,9 @@ static int term_damage(VTermRect rect, void *user) {
 
 static int term_prescroll(VTermRect rect, void *user) {
     Terminal* term = reinterpret_cast<Terminal*>(user);
+#if DEBUG_CALLBACKS
     ALOGW("term_prescroll");
+#endif
 
     JNIEnv* env = getEnv();
     if (env == NULL) {
@@ -148,7 +156,9 @@ static int term_prescroll(VTermRect rect, void *user) {
 
 static int term_moverect(VTermRect dest, VTermRect src, void *user) {
     Terminal* term = reinterpret_cast<Terminal*>(user);
+#if DEBUG_CALLBACKS
     ALOGW("term_moverect");
+#endif
 
     JNIEnv* env = getEnv();
     if (env == NULL) {
@@ -163,7 +173,9 @@ static int term_moverect(VTermRect dest, VTermRect src, void *user) {
 
 static int term_movecursor(VTermPos pos, VTermPos oldpos, int visible, void *user) {
     Terminal* term = reinterpret_cast<Terminal*>(user);
+#if DEBUG_CALLBACKS
     ALOGW("term_movecursor");
+#endif
 
     JNIEnv* env = getEnv();
     if (env == NULL) {
@@ -177,7 +189,9 @@ static int term_movecursor(VTermPos pos, VTermPos oldpos, int visible, void *use
 
 static int term_settermprop(VTermProp prop, VTermValue *val, void *user) {
     Terminal* term = reinterpret_cast<Terminal*>(user);
+#if DEBUG_CALLBACKS
     ALOGW("term_settermprop");
+#endif
 
     JNIEnv* env = getEnv();
     if (env == NULL) {
@@ -205,13 +219,17 @@ static int term_settermprop(VTermProp prop, VTermValue *val, void *user) {
 
 static int term_setmousefunc(VTermMouseFunc func, void *data, void *user) {
     Terminal* term = reinterpret_cast<Terminal*>(user);
+#if DEBUG_CALLBACKS
     ALOGW("term_setmousefunc");
+#endif
     return 1;
 }
 
 static int term_bell(void *user) {
     Terminal* term = reinterpret_cast<Terminal*>(user);
+#if DEBUG_CALLBACKS
     ALOGW("term_bell");
+#endif
 
     JNIEnv* env = getEnv();
     if (env == NULL) {
@@ -224,7 +242,9 @@ static int term_bell(void *user) {
 
 static int term_resize(int rows, int cols, void *user) {
     Terminal* term = reinterpret_cast<Terminal*>(user);
+#if DEBUG_CALLBACKS
     ALOGW("term_resize");
+#endif
 
     JNIEnv* env = getEnv();
     if (env == NULL) {
@@ -247,7 +267,7 @@ static VTermScreenCallbacks cb = {
 };
 
 Terminal::Terminal(jobject callbacks, int rows, int cols) :
-        mCallbacks(callbacks), mRows(rows), mCols(cols) {
+        mCallbacks(callbacks), mRows(rows), mCols(cols), mStopped(false) {
     /* Create VTerm */
     mVt = vterm_new(rows, cols);
     vterm_parser_set_utf8(mVt, 1);
@@ -315,7 +335,7 @@ int Terminal::run() {
         }
 
         char *shell = "/system/bin/sh"; //getenv("SHELL");
-#ifdef USE_TEST_SHELL
+#if USE_TEST_SHELL
         char *args[4] = {shell, "-c", "x=1; c=0; while true; do echo -e \"stop \e[00;3${c}mechoing\e[00m yourself! ($x)\"; x=$(( $x + 1 )); c=$((($c+1)%7)); sleep 0.5; done", NULL};
 #else
         char *args[2] = {shell, NULL};
@@ -330,8 +350,14 @@ int Terminal::run() {
     while (1) {
         char buffer[4096];
         ssize_t bytes = ::read(mMasterFd, buffer, sizeof buffer);
-        ALOGD("Read %d bytes:", bytes);
+#if DEBUG_IO
+        ALOGD("read() returned %d bytes", bytes);
+#endif
 
+        if (mStopped) {
+            ALOGD("stop() requested");
+            break;
+        }
         if (bytes == 0) {
             ALOGD("read() found EOF");
             break;
@@ -346,7 +372,13 @@ int Terminal::run() {
         vterm_screen_flush_damage(mVts);
     }
 
-    return 1;
+    return 0;
+}
+
+int Terminal::stop() {
+    // TODO: explicitly kill forked child process
+    mStopped = true;
+    return 0;
 }
 
 size_t Terminal::write(const char *bytes, size_t len) {
@@ -401,6 +433,11 @@ static jint com_android_terminal_Terminal_nativeInit(JNIEnv* env, jclass clazz, 
 static jint com_android_terminal_Terminal_nativeRun(JNIEnv* env, jclass clazz, jint ptr) {
     Terminal* term = reinterpret_cast<Terminal*>(ptr);
     return term->run();
+}
+
+static jint com_android_terminal_Terminal_nativeStop(JNIEnv* env, jclass clazz, jint ptr) {
+    Terminal* term = reinterpret_cast<Terminal*>(ptr);
+    return term->stop();
 }
 
 static jint com_android_terminal_Terminal_nativeFlushDamage(JNIEnv* env, jclass clazz, jint ptr) {
@@ -502,6 +539,7 @@ static jint com_android_terminal_Terminal_nativeGetCols(JNIEnv* env, jclass claz
 static JNINativeMethod gMethods[] = {
     { "nativeInit", "(Lcom/android/terminal/TerminalCallbacks;II)I", (void*)com_android_terminal_Terminal_nativeInit },
     { "nativeRun", "(I)I", (void*)com_android_terminal_Terminal_nativeRun },
+    { "nativeStop", "(I)I", (void*)com_android_terminal_Terminal_nativeStop },
     { "nativeFlushDamage", "(I)I", (void*)com_android_terminal_Terminal_nativeFlushDamage },
     { "nativeResize", "(III)I", (void*)com_android_terminal_Terminal_nativeResize },
     { "nativeGetCellRun", "(IIILcom/android/terminal/Terminal$CellRun;)I", (void*)com_android_terminal_Terminal_nativeGetCellRun },

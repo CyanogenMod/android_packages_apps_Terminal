@@ -14,11 +14,17 @@
      limitations under the License.
 -->
 
-<resources>
-    <!-- Title of the Terminal activity. -->
-    <string name="app_label">Terminal</string>
+<android.support.v4.view.ViewPager
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/pager"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
 
-    <string name="menu_new_tab">New tab</string>
-    <string name="menu_close_tab">Close tab</string>
+    <android.support.v4.view.PagerTitleStrip
+        android:id="@+id/titles"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top"
+        />
 
-</resources>
+</android.support.v4.view.ViewPager>
