@@ -59,13 +59,25 @@ public class TerminalView extends View {
     private TerminalClient mClient = new TerminalClient() {
         @Override
         public void damage(int startRow, int endRow, int startCol, int endCol) {
+            Log.d(TAG, "damage(" + startRow + ", " + endRow + ", " + startCol + ", " + endCol + ")");
+
+            // Invalidate region on screen
             final int top = startRow * mCharHeight;
             final int bottom = (endRow + 1) * mCharHeight;
             final int left = startCol * mCharWidth;
             final int right = (endCol + 1) * mCharWidth;
-
-            // Invalidate region on screen
             postInvalidate(left, top, right, bottom);
+        }
+
+        @Override
+        public void moveRect(int destStartRow, int destEndRow, int destStartCol, int destEndCol,
+                int srcStartRow, int srcEndRow, int srcStartCol, int srcEndCol) {
+            // Treat as normal damage and perform full redraw
+            final int startRow = Math.min(destStartRow, srcStartRow);
+            final int endRow = Math.max(destEndRow, srcEndRow);
+            final int startCol = Math.min(destStartCol, srcStartCol);
+            final int endCol = Math.max(destEndCol, srcEndCol);
+            damage(startRow, endRow, startCol, endCol);
         }
 
         @Override
@@ -196,8 +208,6 @@ public class TerminalView extends View {
                 col += run.colSize;
             }
         }
-
-        mTerm.flushDamage();
 
         final long delta = SystemClock.elapsedRealtime() - start;
         Log.d(TAG, "onDraw() took " + delta + "ms");

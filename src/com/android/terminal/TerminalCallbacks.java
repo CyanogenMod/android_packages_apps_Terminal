@@ -17,22 +17,20 @@
 package com.android.terminal;
 
 public abstract class TerminalCallbacks {
-    public int damage(int start_row, int end_row, int start_col, int end_col) {
+    public int damage(int startRow, int endRow, int startCol, int endCol) {
         return 1;
     }
 
-    public int prescroll(int start_row, int end_row, int start_col, int end_col) {
+    public int prescroll(int startRow, int endRow, int startCol, int endCol) {
         return 1;
     }
 
-    public int moveRect(int dest_start_row, int dest_end_row, int dest_start_col, int dest_end_col,
-            int src_start_row, int src_end_row, int src_start_col, int src_end_col) {
+    public int moveRect(int destStartRow, int destEndRow, int destStartCol, int destEndCol,
+            int srcStartRow, int srcEndRow, int srcStartCol, int srcEndCol) {
         return 1;
     }
 
-    public int moveCursor(int dest_start_row, int dest_end_row, int dest_start_col,
-            int dest_end_col, int src_start_row, int src_end_row, int src_start_col,
-            int src_end_col, int visible) {
+    public int moveCursor(int posRow, int posCol, int oldPosRow, int oldPosCol, int visible) {
         return 1;
     }
 

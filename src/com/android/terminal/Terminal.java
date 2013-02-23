@@ -50,6 +50,8 @@ public class Terminal {
 
     public interface TerminalClient {
         public void damage(int startRow, int endRow, int startCol, int endCol);
+        public void moveRect(int destStartRow, int destEndRow, int destStartCol, int destEndCol,
+                int srcStartRow, int srcEndRow, int srcStartCol, int srcEndCol);
         public void bell();
     }
 
@@ -70,13 +72,9 @@ public class Terminal {
         @Override
         public int moveRect(int destStartRow, int destEndRow, int destStartCol, int destEndCol,
                 int srcStartRow, int srcEndRow, int srcStartCol, int srcEndCol) {
-            // TODO: arg, this isn't right
             if (mClient != null) {
-                final int startRow = Math.min(destStartRow, srcStartRow);
-                final int endRow = Math.max(destEndRow, srcEndRow);
-                final int startCol = Math.min(destStartCol, srcStartCol);
-                final int endCol = Math.max(destEndCol, srcEndCol);
-                mClient.damage(startRow, endRow, startCol, endCol);
+                mClient.moveRect(destStartRow, destEndRow, destStartCol, destEndCol, srcStartRow,
+                        srcEndRow, srcStartCol, srcEndCol);
             }
             return 1;
         }

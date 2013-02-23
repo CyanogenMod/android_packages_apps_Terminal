@@ -139,7 +139,8 @@ static int term_prescroll(VTermRect rect, void *user) {
         return 0;
     }
 
-    return env->CallIntMethod(term->getCallbacks(), prescrollMethod);
+    return env->CallIntMethod(term->getCallbacks(), prescrollMethod, rect.start_row, rect.end_row,
+            rect.start_col, rect.end_col);
 }
 
 static int term_moverect(VTermRect dest, VTermRect src, void *user) {
@@ -152,7 +153,9 @@ static int term_moverect(VTermRect dest, VTermRect src, void *user) {
         return 0;
     }
 
-    return env->CallIntMethod(term->getCallbacks(), moveRectMethod);
+    return env->CallIntMethod(term->getCallbacks(), moveRectMethod,
+            dest.start_row, dest.end_row, dest.start_col, dest.end_col,
+            src.start_row, src.end_row, src.start_col, src.end_col);
 }
 
 static int term_movecursor(VTermPos pos, VTermPos oldpos, int visible, void *user) {
@@ -165,7 +168,8 @@ static int term_movecursor(VTermPos pos, VTermPos oldpos, int visible, void *use
         return 0;
     }
 
-    return env->CallIntMethod(term->getCallbacks(), moveCursorMethod);
+    return env->CallIntMethod(term->getCallbacks(), moveCursorMethod, pos.row,
+            pos.col, oldpos.row, oldpos.col, visible);
 }
 
 static int term_settermprop(VTermProp prop, VTermValue *val, void *user) {
@@ -249,8 +253,7 @@ Terminal::Terminal(jobject callbacks, int rows, int cols) :
     mVts = vterm_obtain_screen(mVt);
     vterm_screen_enable_altscreen(mVts, 1);
     vterm_screen_set_callbacks(mVts, &cb, this);
-    // TODO: switch back to VTERM_DAMAGE_SCROLL?
-    vterm_screen_set_damage_merge(mVts, VTERM_DAMAGE_CELL);
+    vterm_screen_set_damage_merge(mVts, VTERM_DAMAGE_SCROLL);
     vterm_screen_reset(mVts, 1);
 }
 
@@ -335,6 +338,8 @@ int Terminal::run() {
         }
 
         vterm_push_bytes(mVt, buffer, bytes);
+
+        vterm_screen_flush_damage(mVts);
     }
 
     return 1;
@@ -482,7 +487,7 @@ int register_com_android_terminal_Terminal(JNIEnv* env) {
     android::prescrollMethod = env->GetMethodID(terminalCallbacksClass, "prescroll", "(IIII)I");
     android::moveRectMethod = env->GetMethodID(terminalCallbacksClass, "moveRect", "(IIIIIIII)I");
     android::moveCursorMethod = env->GetMethodID(terminalCallbacksClass, "moveCursor",
-            "(IIIIIIIII)I");
+            "(IIIII)I");
     android::setTermPropBooleanMethod = env->GetMethodID(terminalCallbacksClass,
             "setTermPropBoolean", "(IZ)I");
     android::setTermPropIntMethod = env->GetMethodID(terminalCallbacksClass, "setTermPropInt",
