@@ -151,6 +151,15 @@ public class Terminal {
         return mTitle;
     }
 
+    public boolean dispatchKey(int modifiers, int key) {
+        return nativeDispatchKey(mNativePtr, modifiers, key) == 0;
+    }
+
+    public boolean dispatchCharacter(int modifiers, int character) {
+        return nativeDispatchCharacter(mNativePtr, modifiers, character) == 0;
+    }
+
+
     private static native int nativeInit(TerminalCallbacks callbacks, int rows, int cols);
     private static native int nativeRun(int ptr);
     private static native int nativeStop(int ptr);
@@ -160,4 +169,7 @@ public class Terminal {
     private static native int nativeGetCellRun(int ptr, int row, int col, CellRun run);
     private static native int nativeGetRows(int ptr);
     private static native int nativeGetCols(int ptr);
+
+    private static native int nativeDispatchKey(int ptr, int modifiers, int key);
+    private static native int nativeDispatchCharacter(int ptr, int modifiers, int character);
 }

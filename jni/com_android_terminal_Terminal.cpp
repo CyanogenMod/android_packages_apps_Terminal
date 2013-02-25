@@ -87,6 +87,10 @@ public:
 
     size_t write(const char *bytes, size_t len);
 
+    int dispatchCharacter(int mod, int character);
+    int dispatchKey(int mod, int key);
+    void flushInput();
+
     int flushDamage();
     int resize(short unsigned int rows, short unsigned int cols);
 
@@ -286,8 +290,6 @@ Terminal::~Terminal() {
 }
 
 int Terminal::run() {
-    /* None of the docs about termios explain how to construct a new one of
-     * these, so this is largely a guess */
     struct termios termios = {
         .c_iflag = ICRNL|IXON|IUTF8,
         .c_oflag = OPOST|ONLCR|NL0|CR0|TAB0|BS0|VT0|FF0,
@@ -383,6 +385,27 @@ int Terminal::stop() {
 
 size_t Terminal::write(const char *bytes, size_t len) {
     return ::write(mMasterFd, bytes, len);
+}
+
+int Terminal::dispatchCharacter(int mod, int character) {
+    vterm_input_push_char(mVt, static_cast<VTermModifier>((int)mod), character);
+    flushInput();
+    return 0;
+}
+
+int Terminal::dispatchKey(int mod, int key) {
+    vterm_input_push_key(mVt, static_cast<VTermModifier>(mod), static_cast<VTermKey>(key));
+    flushInput();
+    return 0;
+}
+
+void Terminal::flushInput() {
+    size_t len = vterm_output_get_buffer_current(mVt);
+    if (len) {
+        char buf[len];
+        len = vterm_output_bufferread(mVt, buf, len);
+        write(buf, len);
+    }
 }
 
 int Terminal::flushDamage() {
@@ -536,6 +559,18 @@ static jint com_android_terminal_Terminal_nativeGetCols(JNIEnv* env, jclass claz
     return term->getCols();
 }
 
+static jint com_android_terminal_Terminal_nativeDispatchCharacter(JNIEnv *env, jclass clazz,
+        jint ptr, jint mod, jint c) {
+    Terminal* term = reinterpret_cast<Terminal*>(ptr);
+    return term->dispatchCharacter(mod, c);
+}
+
+static jint com_android_terminal_Terminal_nativeDispatchKey(JNIEnv *env, jclass clazz, jint ptr,
+        jint mod, jint c) {
+    Terminal* term = reinterpret_cast<Terminal*>(ptr);
+    return term->dispatchKey(mod, c);
+}
+
 static JNINativeMethod gMethods[] = {
     { "nativeInit", "(Lcom/android/terminal/TerminalCallbacks;II)I", (void*)com_android_terminal_Terminal_nativeInit },
     { "nativeRun", "(I)I", (void*)com_android_terminal_Terminal_nativeRun },
@@ -545,6 +580,8 @@ static JNINativeMethod gMethods[] = {
     { "nativeGetCellRun", "(IIILcom/android/terminal/Terminal$CellRun;)I", (void*)com_android_terminal_Terminal_nativeGetCellRun },
     { "nativeGetRows", "(I)I", (void*)com_android_terminal_Terminal_nativeGetRows },
     { "nativeGetCols", "(I)I", (void*)com_android_terminal_Terminal_nativeGetCols },
+    { "nativeDispatchCharacter", "(III)I", (void*)com_android_terminal_Terminal_nativeDispatchCharacter},
+    { "nativeDispatchKey", "(III)I", (void*)com_android_terminal_Terminal_nativeDispatchKey },
 };
 
 int register_com_android_terminal_Terminal(JNIEnv* env) {
