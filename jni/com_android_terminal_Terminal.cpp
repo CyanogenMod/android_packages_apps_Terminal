@@ -388,7 +388,7 @@ size_t Terminal::write(const char *bytes, size_t len) {
 }
 
 int Terminal::dispatchCharacter(int mod, int character) {
-    vterm_input_push_char(mVt, static_cast<VTermModifier>((int)mod), character);
+    vterm_input_push_char(mVt, static_cast<VTermModifier>(mod), character);
     flushInput();
     return 0;
 }
