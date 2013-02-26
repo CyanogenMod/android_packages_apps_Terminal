@@ -25,6 +25,10 @@ import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.os.SystemClock;
 import android.util.Log;
+import android.view.inputmethod.BaseInputConnection;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputConnection;
+import android.view.KeyEvent;
 import android.view.View;
 
 import com.android.terminal.Terminal.CellRun;
@@ -50,6 +54,8 @@ public class TerminalView extends View {
     private final float[] mPos;
 
     private Terminal mTerm;
+
+    private TerminalKeys mTermKeys;
 
     private int mCharTop;
     private int mCharWidth;
@@ -107,8 +113,17 @@ public class TerminalView extends View {
             @Override
             public void onClick(View v) {
                 v.invalidate();
+                v.requestFocus();
             }
         });
+
+        // Set view properties
+        setFocusable(true);
+        setFocusableInTouchMode(true);
+        setScrollContainer(true);
+
+        mTermKeys = new TerminalKeys();
+        setOnKeyListener(mTermKeys);
     }
 
     public void setTerminal(Terminal term) {
@@ -119,6 +134,7 @@ public class TerminalView extends View {
         mTerm = term;
         if (term != null) {
             term.setClient(mClient);
+            mTermKeys.setTerminal(term);
         }
         updateTerminalSize();
     }
@@ -234,5 +250,38 @@ public class TerminalView extends View {
 
         final long delta = SystemClock.elapsedRealtime() - start;
         if (LOGD) Log.d(TAG, "onDraw() took " + delta + "ms");
+    }
+
+    @Override
+    public boolean onCheckIsTextEditor() {
+        return true;
+    }
+
+    @Override
+    public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
+        outAttrs.imeOptions |=
+            EditorInfo.IME_FLAG_NO_EXTRACT_UI |
+            EditorInfo.IME_FLAG_NO_ENTER_ACTION |
+            EditorInfo.IME_ACTION_NONE;
+        outAttrs.inputType = EditorInfo.TYPE_NULL;
+        return new BaseInputConnection(this, false) {
+            @Override
+            public boolean deleteSurroundingText (int leftLength, int rightLength) {
+                KeyEvent k;
+                if (rightLength == 0 && leftLength == 0) {
+                    k = new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL);
+                    return this.sendKeyEvent(k);
+                }
+                for (int i = 0; i < leftLength; i++) {
+                    k = new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL);
+                    this.sendKeyEvent(k);
+                }
+                for (int i = 0; i < rightLength; i++) {
+                    k = new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_FORWARD_DEL);
+                    this.sendKeyEvent(k);
+                }
+                return true;
+            }
+        };
     }
 }

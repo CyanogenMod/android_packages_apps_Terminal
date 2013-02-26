@@ -19,9 +19,11 @@ package com.android.terminal;
 import android.util.Log;
 import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
+import android.view.View;
 
-public class TerminalKeys {
+public class TerminalKeys implements View.OnKeyListener {
     private static final String TAG = "TerminalKeys";
+    private static final boolean DEBUG = true;
     // Taken from vterm_input.h
     // TODO: Consider setting these via jni
     public static final int VTERM_KEY_NONE      = 0;
@@ -67,7 +69,9 @@ public class TerminalKeys {
     public static final int VTERM_MOD_ALT = 0x02;
     public static final int VTERM_MOD_CTRL = 0x04;
 
-    public static int getModifier(KeyEvent event) {
+    private Terminal mTerm;
+
+    public static int getModifiers(KeyEvent event) {
         int mod = 0;
         if (event.isCtrlPressed()) {
             mod |= VTERM_MOD_CTRL;
@@ -153,13 +157,47 @@ public class TerminalKeys {
         }
     }
 
-    public static int getCharacter(KeyEvent event) {
+    public int getCharacter(KeyEvent event) {
         int c = event.getUnicodeChar();
         // TODO: Actually support dead keys
         if ((c & KeyCharacterMap.COMBINING_ACCENT) != 0) {
             Log.w(TAG, "Received dead key, ignoring");
-            return VTERM_KEY_NONE;
+            return 0;
         }
         return c;
+    }
+
+    public boolean onKey(View v, int keyCode, KeyEvent event) {
+        if (mTerm == null) return false;
+
+        int modifiers = getModifiers(event);
+
+        int c = getKey(event);
+        if (c != 0) {
+            mTerm.dispatchKey(modifiers, c);
+            if (DEBUG) {
+                Log.d(TAG, "dispatched key event: " +
+                        "mod=" + modifiers + ", " +
+                        "keys=" + getKeyName(keyCode));
+            }
+            return true;
+        }
+
+        c = getCharacter(event);
+        if (c != 0) {
+            mTerm.dispatchKey(modifiers, c);
+            if (DEBUG) {
+                Log.d(TAG, "dispatched key event: " +
+                        "mod=" + modifiers + ", " +
+                        "character='" + new String(Character.toChars(c)) + "'");
+            }
+            return true;
+        }
+
+        return false;
+    }
+
+    public void setTerminal(Terminal term) {
+        mTerm = term;
     }
 }
