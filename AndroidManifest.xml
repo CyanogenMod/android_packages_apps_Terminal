@@ -20,7 +20,8 @@
         android:label="@string/app_label"
         android:persistent="true">
 
-        <activity android:name=".TerminalActivity">
+        <activity android:name=".TerminalActivity"
+                android:windowSoftInputMode="stateAlwaysVisible|adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.DEFAULT" />

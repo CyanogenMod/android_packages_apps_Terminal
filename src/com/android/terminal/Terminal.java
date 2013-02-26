@@ -152,11 +152,11 @@ public class Terminal {
     }
 
     public boolean dispatchKey(int modifiers, int key) {
-        return nativeDispatchKey(mNativePtr, modifiers, key) == 0;
+        return nativeDispatchKey(mNativePtr, modifiers, key);
     }
 
     public boolean dispatchCharacter(int modifiers, int character) {
-        return nativeDispatchCharacter(mNativePtr, modifiers, character) == 0;
+        return nativeDispatchCharacter(mNativePtr, modifiers, character);
     }
 
 
@@ -170,6 +170,6 @@ public class Terminal {
     private static native int nativeGetRows(int ptr);
     private static native int nativeGetCols(int ptr);
 
-    private static native int nativeDispatchKey(int ptr, int modifiers, int key);
-    private static native int nativeDispatchCharacter(int ptr, int modifiers, int character);
+    private static native boolean nativeDispatchKey(int ptr, int modifiers, int key);
+    private static native boolean nativeDispatchCharacter(int ptr, int modifiers, int character);
 }

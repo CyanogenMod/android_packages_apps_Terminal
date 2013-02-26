@@ -168,30 +168,28 @@ public class TerminalKeys implements View.OnKeyListener {
     }
 
     public boolean onKey(View v, int keyCode, KeyEvent event) {
-        if (mTerm == null) return false;
+        if (mTerm == null || event.getAction() == KeyEvent.ACTION_UP) return false;
 
         int modifiers = getModifiers(event);
 
         int c = getKey(event);
         if (c != 0) {
-            mTerm.dispatchKey(modifiers, c);
             if (DEBUG) {
                 Log.d(TAG, "dispatched key event: " +
                         "mod=" + modifiers + ", " +
-                        "keys=" + getKeyName(keyCode));
+                        "keys=" + getKeyName(c));
             }
-            return true;
+            return mTerm.dispatchKey(modifiers, c);
         }
 
         c = getCharacter(event);
         if (c != 0) {
-            mTerm.dispatchKey(modifiers, c);
             if (DEBUG) {
                 Log.d(TAG, "dispatched key event: " +
                         "mod=" + modifiers + ", " +
                         "character='" + new String(Character.toChars(c)) + "'");
             }
-            return true;
+            return mTerm.dispatchCharacter(modifiers, c);
         }
 
         return false;
