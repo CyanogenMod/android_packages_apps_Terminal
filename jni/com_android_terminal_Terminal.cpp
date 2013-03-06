@@ -522,19 +522,21 @@ static jint com_android_terminal_Terminal_nativeGetCellRun(JNIEnv* env,
         }
         memcpy(&prevCell, &cell, sizeof(VTermScreenCell));
 
-        // TODO: remove this once terminal is resized
-        if (cell.width == 0) {
-            cell.width = 1;
-        }
-
-        // TODO: support full UTF-32 characters
-        // for testing, 0x00020000 should become 0xD840 0xDC00
-        unsigned int size = 1;
-
         // Only include cell chars if they fit into run
+        uint32_t rawCell = cell.chars[0];
+        unsigned int size = (rawCell < 0x10000) ? 1 : 2;
         if (dataSize + size <= data.size()) {
-            data[dataSize] = cell.chars[0];
-            dataSize += size;
+            if (rawCell < 0x10000) {
+                data[dataSize++] = rawCell;
+            } else {
+                data[dataSize++] = (((rawCell - 0x10000) >> 10) & 0x3ff) + 0xd800;
+                data[dataSize++] = ((rawCell - 0x10000) & 0x3ff) + 0xdc00;
+            }
+
+            for (int i = 1; i < cell.width; i++) {
+                data[dataSize++] = ' ';
+            }
+
             colSize += cell.width;
             pos.col += cell.width;
         } else {
