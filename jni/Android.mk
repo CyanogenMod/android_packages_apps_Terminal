@@ -9,12 +9,15 @@ LOCAL_SRC_FILES := \
 
 LOCAL_C_INCLUDES += \
     external/libvterm/include \
-    libcore/include
+    libcore/include \
+    frameworks/base/include
 
 LOCAL_SHARED_LIBRARIES := \
+    libandroidfw \
+    libandroid_runtime \
     liblog \
-    libutils \
-    libnativehelper
+    libnativehelper \
+    libutils
 
 LOCAL_STATIC_LIBRARIES := \
     libvterm

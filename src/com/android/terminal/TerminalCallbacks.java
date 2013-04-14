@@ -21,10 +21,6 @@ public abstract class TerminalCallbacks {
         return 1;
     }
 
-    public int prescroll(int startRow, int endRow, int startCol, int endCol) {
-        return 1;
-    }
-
     public int moveRect(int destStartRow, int destEndRow, int destStartCol, int destEndCol,
             int srcStartRow, int srcEndRow, int srcStartCol, int srcEndCol) {
         return 1;
@@ -51,10 +47,6 @@ public abstract class TerminalCallbacks {
     }
 
     public int bell() {
-        return 1;
-    }
-
-    public int resize(int rows, int cols) {
         return 1;
     }
 }

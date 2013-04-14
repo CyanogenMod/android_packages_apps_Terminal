@@ -17,6 +17,9 @@
 #define LOG_TAG "Terminal"
 
 #include <utils/Log.h>
+#include <utils/Mutex.h>
+#include "android_runtime/AndroidRuntime.h"
+
 #include "forkpty.h"
 #include "jni.h"
 #include "JNIHelp.h"
@@ -37,13 +40,9 @@
 #define USE_TEST_SHELL 0
 #define DEBUG_CALLBACKS 0
 #define DEBUG_IO 0
+#define DEBUG_SCROLLBACK 0
 
 namespace android {
-
-/*
- * JavaVM reference
- */
-static JavaVM* gJavaVM;
 
 /*
  * Callback class reference
@@ -54,7 +53,6 @@ static jclass terminalCallbacksClass;
  * Callback methods
  */
 static jmethodID damageMethod;
-static jmethodID prescrollMethod;
 static jmethodID moveRectMethod;
 static jmethodID moveCursorMethod;
 static jmethodID setTermPropBooleanMethod;
@@ -62,7 +60,6 @@ static jmethodID setTermPropIntMethod;
 static jmethodID setTermPropStringMethod;
 static jmethodID setTermPropColorMethod;
 static jmethodID bellMethod;
-static jmethodID resizeMethod;
 
 /*
  * CellRun class
@@ -74,16 +71,48 @@ static jfieldID cellRunColSizeField;
 static jfieldID cellRunFgField;
 static jfieldID cellRunBgField;
 
+typedef short unsigned int dimen_t;
+
+class ScrollbackLine {
+public:
+    inline ScrollbackLine(dimen_t _cols) : cols(_cols) {
+        mCells = new VTermScreenCell[cols];
+    };
+    inline ~ScrollbackLine() {
+        delete mCells;
+    }
+
+    inline dimen_t copyFrom(dimen_t cols, const VTermScreenCell* cells) {
+        dimen_t n = this->cols > cols ? cols : this->cols;
+        memcpy(mCells, cells, sizeof(VTermScreenCell) * n);
+        return n;
+    }
+
+    inline dimen_t copyTo(dimen_t cols, VTermScreenCell* cells) {
+        dimen_t n = cols > this->cols ? this->cols : cols;
+        memcpy(cells, mCells, sizeof(VTermScreenCell) * n);
+        return n;
+    }
+
+    inline void getCell(dimen_t col, VTermScreenCell* cell) {
+        *cell = mCells[col];
+    }
+
+    const dimen_t cols;
+
+private:
+    VTermScreenCell* mCells;
+};
+
 /*
  * Terminal session
  */
 class Terminal {
 public:
-    Terminal(jobject callbacks, int rows, int cols);
+    Terminal(jobject callbacks, dimen_t rows, dimen_t cols);
     ~Terminal();
 
-    int run();
-    int stop();
+    status_t run();
 
     size_t write(const char *bytes, size_t len);
 
@@ -91,36 +120,39 @@ public:
     bool dispatchKey(int mod, int key);
     bool flushInput();
 
-    int flushDamage();
-    int resize(short unsigned int rows, short unsigned int cols);
+    status_t resize(dimen_t rows, dimen_t cols, dimen_t scrollRows);
 
-    int getCell(VTermPos pos, VTermScreenCell* cell);
+    status_t onPushline(dimen_t cols, const VTermScreenCell* cells);
+    status_t onPopline(dimen_t cols, VTermScreenCell* cells);
 
-    int getRows() const;
-    int getCols() const;
+    void getCellLocked(VTermPos pos, VTermScreenCell* cell);
+
+    dimen_t getRows() const;
+    dimen_t getCols() const;
+    dimen_t getScrollRows() const;
 
     jobject getCallbacks() const;
 
+    // Lock protecting mutations of internal libvterm state
+    Mutex mLock;
+
 private:
     int mMasterFd;
+    pid_t mChildPid;
     VTerm *mVt;
     VTermScreen *mVts;
 
     jobject mCallbacks;
-    short unsigned int mRows;
-    short unsigned int mCols;
-    bool mStopped;
+
+    dimen_t mRows;
+    dimen_t mCols;
+    bool mKilled;
+
+    ScrollbackLine **mScroll;
+    dimen_t mScrollCur;
+    dimen_t mScrollSize;
+
 };
-
-static JNIEnv* getEnv() {
-    JNIEnv* env;
-
-    if (gJavaVM->AttachCurrentThread(&env, NULL) < 0) {
-        return NULL;
-    }
-
-    return env;
-}
 
 /*
  * VTerm event handlers
@@ -132,29 +164,8 @@ static int term_damage(VTermRect rect, void *user) {
     ALOGW("term_damage");
 #endif
 
-    JNIEnv* env = getEnv();
-    if (env == NULL) {
-        ALOGE("term_damage: couldn't get JNIEnv");
-        return 0;
-    }
-
+    JNIEnv* env = AndroidRuntime::getJNIEnv();
     return env->CallIntMethod(term->getCallbacks(), damageMethod, rect.start_row, rect.end_row,
-            rect.start_col, rect.end_col);
-}
-
-static int term_prescroll(VTermRect rect, void *user) {
-    Terminal* term = reinterpret_cast<Terminal*>(user);
-#if DEBUG_CALLBACKS
-    ALOGW("term_prescroll");
-#endif
-
-    JNIEnv* env = getEnv();
-    if (env == NULL) {
-        ALOGE("term_prescroll: couldn't get JNIEnv");
-        return 0;
-    }
-
-    return env->CallIntMethod(term->getCallbacks(), prescrollMethod, rect.start_row, rect.end_row,
             rect.start_col, rect.end_col);
 }
 
@@ -164,12 +175,7 @@ static int term_moverect(VTermRect dest, VTermRect src, void *user) {
     ALOGW("term_moverect");
 #endif
 
-    JNIEnv* env = getEnv();
-    if (env == NULL) {
-        ALOGE("term_moverect: couldn't get JNIEnv");
-        return 0;
-    }
-
+    JNIEnv* env = AndroidRuntime::getJNIEnv();
     return env->CallIntMethod(term->getCallbacks(), moveRectMethod,
             dest.start_row, dest.end_row, dest.start_col, dest.end_col,
             src.start_row, src.end_row, src.start_col, src.end_col);
@@ -181,12 +187,7 @@ static int term_movecursor(VTermPos pos, VTermPos oldpos, int visible, void *use
     ALOGW("term_movecursor");
 #endif
 
-    JNIEnv* env = getEnv();
-    if (env == NULL) {
-        ALOGE("term_movecursor: couldn't get JNIEnv");
-        return 0;
-    }
-
+    JNIEnv* env = AndroidRuntime::getJNIEnv();
     return env->CallIntMethod(term->getCallbacks(), moveCursorMethod, pos.row,
             pos.col, oldpos.row, oldpos.col, visible);
 }
@@ -197,12 +198,7 @@ static int term_settermprop(VTermProp prop, VTermValue *val, void *user) {
     ALOGW("term_settermprop");
 #endif
 
-    JNIEnv* env = getEnv();
-    if (env == NULL) {
-        ALOGE("term_settermprop: couldn't get JNIEnv");
-        return 0;
-    }
-
+    JNIEnv* env = AndroidRuntime::getJNIEnv();
     switch (vterm_get_prop_type(prop)) {
     case VTERM_VALUETYPE_BOOL:
         return env->CallIntMethod(term->getCallbacks(), setTermPropBooleanMethod,
@@ -235,43 +231,50 @@ static int term_bell(void *user) {
     ALOGW("term_bell");
 #endif
 
-    JNIEnv* env = getEnv();
-    if (env == NULL) {
-        ALOGE("term_bell: couldn't get JNIEnv");
-        return 0;
-    }
-
+    JNIEnv* env = AndroidRuntime::getJNIEnv();
     return env->CallIntMethod(term->getCallbacks(), bellMethod);
 }
 
-static int term_resize(int rows, int cols, void *user) {
+static int term_sb_pushline(int cols, const VTermScreenCell *cells, void *user) {
     Terminal* term = reinterpret_cast<Terminal*>(user);
 #if DEBUG_CALLBACKS
-    ALOGW("term_resize");
+    ALOGW("term_sb_pushline");
 #endif
 
-    JNIEnv* env = getEnv();
-    if (env == NULL) {
-        ALOGE("term_bell: couldn't get JNIEnv");
-        return 0;
-    }
+    return term->onPushline(cols, cells);
+}
 
-    return env->CallIntMethod(term->getCallbacks(), resizeMethod, rows, cols);
+static int term_sb_popline(int cols, VTermScreenCell *cells, void *user) {
+    Terminal* term = reinterpret_cast<Terminal*>(user);
+#if DEBUG_CALLBACKS
+    ALOGW("term_sb_popline");
+#endif
+
+    return term->onPopline(cols, cells);
 }
 
 static VTermScreenCallbacks cb = {
     .damage = term_damage,
-    .prescroll = term_prescroll,
     .moverect = term_moverect,
     .movecursor = term_movecursor,
     .settermprop = term_settermprop,
     .setmousefunc = term_setmousefunc,
     .bell = term_bell,
-    .resize = term_resize,
+    // Resize requests are applied immediately, so callback is ignored
+    .resize = NULL,
+    .sb_pushline = term_sb_pushline,
+    .sb_popline = term_sb_popline,
 };
 
-Terminal::Terminal(jobject callbacks, int rows, int cols) :
-        mCallbacks(callbacks), mRows(rows), mCols(cols), mStopped(false) {
+Terminal::Terminal(jobject callbacks, dimen_t rows, dimen_t cols) :
+        mCallbacks(callbacks), mRows(rows), mCols(cols), mKilled(false),
+        mScrollCur(0), mScrollSize(100) {
+    JNIEnv* env = AndroidRuntime::getJNIEnv();
+    mCallbacks = env->NewGlobalRef(callbacks);
+
+    mScroll = new ScrollbackLine*[mScrollSize];
+    memset(mScroll, 0, sizeof(ScrollbackLine*) * mScrollSize);
+
     /* Create VTerm */
     mVt = vterm_new(rows, cols);
     vterm_parser_set_utf8(mVt, 1);
@@ -286,10 +289,17 @@ Terminal::Terminal(jobject callbacks, int rows, int cols) :
 
 Terminal::~Terminal() {
     close(mMasterFd);
+    ::kill(mChildPid, SIGHUP);
+
     vterm_free(mVt);
+
+    delete mScroll;
+
+    JNIEnv *env = AndroidRuntime::getJNIEnv();
+    env->DeleteGlobalRef(mCallbacks);
 }
 
-int Terminal::run() {
+status_t Terminal::run() {
     struct termios termios = {
         .c_iflag = ICRNL|IXON|IUTF8,
         .c_oflag = OPOST|ONLCR|NL0|CR0|TAB0|BS0|VT0|FF0,
@@ -322,8 +332,8 @@ int Terminal::run() {
         ALOGE("failed to dup stderr - %s", strerror(errno));
     }
 
-    pid_t kid = forkpty(&mMasterFd, NULL, &termios, &size);
-    if (kid == 0) {
+    mChildPid = forkpty(&mMasterFd, NULL, &termios, &size);
+    if (mChildPid == 0) {
         /* Restore the ISIG signals back to defaults */
         signal(SIGINT, SIG_DFL);
         signal(SIGQUIT, SIG_DFL);
@@ -338,7 +348,7 @@ int Terminal::run() {
 
         char *shell = "/system/bin/sh"; //getenv("SHELL");
 #if USE_TEST_SHELL
-        char *args[4] = {shell, "-c", "x=1; c=0; while true; do echo -e \"stop \e[00;3${c}mechoing\e[00m yourself! ($x)\"; x=$(( $x + 1 )); c=$((($c+1)%7)); sleep 0.5; done", NULL};
+        char *args[4] = {shell, "-c", "x=1; c=0; while true; do echo -e \"stop \e[00;3${c}mechoing\e[00m yourself! ($x)\"; x=$(( $x + 1 )); c=$((($c+1)%7)); if [ $x -gt 110 ]; then sleep 0.5; fi; done", NULL};
 #else
         char *args[2] = {shell, NULL};
 #endif
@@ -356,8 +366,8 @@ int Terminal::run() {
         ALOGD("read() returned %d bytes", bytes);
 #endif
 
-        if (mStopped) {
-            ALOGD("stop() requested");
+        if (mKilled) {
+            ALOGD("kill() requested");
             break;
         }
         if (bytes == 0) {
@@ -369,17 +379,13 @@ int Terminal::run() {
             return 1;
         }
 
-        vterm_push_bytes(mVt, buffer, bytes);
-
-        vterm_screen_flush_damage(mVts);
+        {
+            Mutex::Autolock lock(mLock);
+            vterm_push_bytes(mVt, buffer, bytes);
+            vterm_screen_flush_damage(mVts);
+        }
     }
 
-    return 0;
-}
-
-int Terminal::stop() {
-    // TODO: explicitly kill forked child process
-    mStopped = true;
     return 0;
 }
 
@@ -388,11 +394,13 @@ size_t Terminal::write(const char *bytes, size_t len) {
 }
 
 bool Terminal::dispatchCharacter(int mod, int character) {
+    Mutex::Autolock lock(mLock);
     vterm_input_push_char(mVt, static_cast<VTermModifier>(mod), character);
     return flushInput();
 }
 
 bool Terminal::dispatchKey(int mod, int key) {
+    Mutex::Autolock lock(mLock);
     vterm_input_push_key(mVt, static_cast<VTermModifier>(mod), static_cast<VTermKey>(key));
     return flushInput();
 }
@@ -407,16 +415,14 @@ bool Terminal::flushInput() {
     return true;
 }
 
-int Terminal::flushDamage() {
-    vterm_screen_flush_damage(mVts);
-    return 0;
-}
+status_t Terminal::resize(dimen_t rows, dimen_t cols, dimen_t scrollRows) {
+    Mutex::Autolock lock(mLock);
 
-int Terminal::resize(short unsigned int rows, short unsigned int cols) {
-    ALOGD("resize(%d, %d)", rows, cols);
+    ALOGD("resize(%d, %d, %d)", rows, cols, scrollRows);
 
     mRows = rows;
     mCols = cols;
+    // TODO: resize scrollback
 
     struct winsize size = { rows, cols, 0, 0 };
     ioctl(mMasterFd, TIOCSWINSZ, &size);
@@ -427,16 +433,113 @@ int Terminal::resize(short unsigned int rows, short unsigned int cols) {
     return 0;
 }
 
-int Terminal::getCell(VTermPos pos, VTermScreenCell* cell) {
-    return vterm_screen_get_cell(mVts, pos, cell);
+status_t Terminal::onPushline(dimen_t cols, const VTermScreenCell* cells) {
+    ScrollbackLine* line = NULL;
+    if (mScrollCur == mScrollSize) {
+        /* Recycle old row if it's the right size */
+        if (mScroll[mScrollCur - 1]->cols == cols) {
+            line = mScroll[mScrollCur - 1];
+        } else {
+            delete mScroll[mScrollCur - 1];
+        }
+
+        memmove(mScroll + 1, mScroll, sizeof(ScrollbackLine*) * (mScrollCur - 1));
+    } else if (mScrollCur > 0) {
+        memmove(mScroll + 1, mScroll, sizeof(ScrollbackLine*) * mScrollCur);
+    }
+
+    if (line == NULL) {
+        line = new ScrollbackLine(cols);
+    }
+
+    mScroll[0] = line;
+
+    if (mScrollCur < mScrollSize) {
+        mScrollCur++;
+    }
+
+    line->copyFrom(cols, cells);
+    return 1;
 }
 
-int Terminal::getRows() const {
+status_t Terminal::onPopline(dimen_t cols, VTermScreenCell* cells) {
+    if (mScrollCur == 0) {
+        return 0;
+    }
+
+    ScrollbackLine* line = mScroll[0];
+    mScrollCur--;
+    memmove(mScroll, mScroll + 1, sizeof(ScrollbackLine*) * mScrollCur);
+
+    dimen_t n = line->copyTo(cols, cells);
+    for (dimen_t col = n; col < cols; col++) {
+        cells[col].chars[0] = 0;
+        cells[col].width = 1;
+    }
+
+    delete line;
+    return 1;
+}
+
+void Terminal::getCellLocked(VTermPos pos, VTermScreenCell* cell) {
+    // The UI may be asking for cell data while the model is changing
+    // underneath it, so we always fill with meaningful data.
+
+    if (pos.row < 0) {
+        size_t scrollRow = -pos.row;
+        if (scrollRow > mScrollCur) {
+            // Invalid region above current scrollback
+            cell->width = 1;
+#if DEBUG_SCROLLBACK
+            cell->bg.red = 255;
+#endif
+            return;
+        }
+
+        ScrollbackLine* line = mScroll[scrollRow - 1];
+        if ((size_t) pos.col < line->cols) {
+            // Valid scrollback cell
+            line->getCell(pos.col, cell);
+            cell->width = 1;
+#if DEBUG_SCROLLBACK
+            cell->bg.blue = 255;
+#endif
+            return;
+        } else {
+            // Extend last scrollback cell into invalid region
+            line->getCell(line->cols - 1, cell);
+            cell->width = 1;
+            cell->chars[0] = ' ';
+#if DEBUG_SCROLLBACK
+            cell->bg.green = 255;
+#endif
+            return;
+        }
+    }
+
+    if ((size_t) pos.row >= mRows) {
+        // Invalid region below screen
+        cell->width = 1;
+#if DEBUG_SCROLLBACK
+        cell->bg.red = 128;
+#endif
+        return;
+    }
+
+    // Valid screen cell
+    vterm_screen_get_cell(mVts, pos, cell);
+}
+
+dimen_t Terminal::getRows() const {
     return mRows;
 }
 
-int Terminal::getCols() const {
+dimen_t Terminal::getCols() const {
     return mCols;
+}
+
+dimen_t Terminal::getScrollRows() const {
+    return mScrollSize;
 }
 
 jobject Terminal::getCallbacks() const {
@@ -449,7 +552,13 @@ jobject Terminal::getCallbacks() const {
 
 static jint com_android_terminal_Terminal_nativeInit(JNIEnv* env, jclass clazz, jobject callbacks,
         jint rows, jint cols) {
-    return reinterpret_cast<jint>(new Terminal(env->NewGlobalRef(callbacks), rows, cols));
+    return reinterpret_cast<jint>(new Terminal(callbacks, rows, cols));
+}
+
+static jint com_android_terminal_Terminal_nativeDestroy(JNIEnv* env, jclass clazz, jint ptr) {
+    Terminal* term = reinterpret_cast<Terminal*>(ptr);
+    delete term;
+    return 0;
 }
 
 static jint com_android_terminal_Terminal_nativeRun(JNIEnv* env, jclass clazz, jint ptr) {
@@ -457,40 +566,35 @@ static jint com_android_terminal_Terminal_nativeRun(JNIEnv* env, jclass clazz, j
     return term->run();
 }
 
-static jint com_android_terminal_Terminal_nativeStop(JNIEnv* env, jclass clazz, jint ptr) {
-    Terminal* term = reinterpret_cast<Terminal*>(ptr);
-    return term->stop();
-}
-
-static jint com_android_terminal_Terminal_nativeFlushDamage(JNIEnv* env, jclass clazz, jint ptr) {
-    Terminal* term = reinterpret_cast<Terminal*>(ptr);
-    return term->flushDamage();
-}
-
 static jint com_android_terminal_Terminal_nativeResize(JNIEnv* env,
-        jclass clazz, jint ptr, jint rows, jint cols) {
+        jclass clazz, jint ptr, jint rows, jint cols, jint scrollRows) {
     Terminal* term = reinterpret_cast<Terminal*>(ptr);
-    return term->resize(rows, cols);
+    return term->resize(rows, cols, scrollRows);
 }
 
-static int toArgb(VTermColor* color) {
-    return 0xff << 24 | color->red << 16 | color->green << 8 | color->blue;
+static inline int toArgb(const VTermColor& color) {
+    return (0xff << 24 | color.red << 16 | color.green << 8 | color.blue);
 }
 
-static bool isCellStyleEqual(VTermScreenCell* a, VTermScreenCell* b) {
-    // TODO: check other attrs beyond just color
-    if (toArgb(&a->fg) != toArgb(&b->fg)) {
-        return false;
-    }
-    if (toArgb(&a->bg) != toArgb(&b->bg)) {
-        return false;
-    }
+static inline bool isCellStyleEqual(const VTermScreenCell& a, const VTermScreenCell& b) {
+    if (toArgb(a.fg) != toArgb(b.fg)) return false;
+    if (toArgb(a.bg) != toArgb(b.bg)) return false;
+
+    if (a.attrs.bold != b.attrs.bold) return false;
+    if (a.attrs.underline != b.attrs.underline) return false;
+    if (a.attrs.italic != b.attrs.italic) return false;
+    if (a.attrs.blink != b.attrs.blink) return false;
+    if (a.attrs.reverse != b.attrs.reverse) return false;
+    if (a.attrs.strike != b.attrs.strike) return false;
+    if (a.attrs.font != b.attrs.font) return false;
+
     return true;
 }
 
 static jint com_android_terminal_Terminal_nativeGetCellRun(JNIEnv* env,
         jclass clazz, jint ptr, jint row, jint col, jobject run) {
     Terminal* term = reinterpret_cast<Terminal*>(ptr);
+    Mutex::Autolock lock(term->mLock);
 
     jcharArray dataArray = (jcharArray) env->GetObjectField(run, cellRunDataField);
     ScopedCharArrayRW data(env, dataArray);
@@ -498,33 +602,32 @@ static jint com_android_terminal_Terminal_nativeGetCellRun(JNIEnv* env,
         return -1;
     }
 
-    VTermScreenCell prevCell, cell;
-    memset(&prevCell, 0, sizeof(VTermScreenCell));
-    memset(&cell, 0, sizeof(VTermScreenCell));
+    VTermScreenCell firstCell, cell;
 
     VTermPos pos = {
         .row = row,
         .col = col,
     };
 
-    unsigned int dataSize = 0;
-    unsigned int colSize = 0;
-    while (pos.col < term->getCols()) {
-        int res = term->getCell(pos, &cell);
+    size_t dataSize = 0;
+    size_t colSize = 0;
+    while ((size_t) pos.col < term->getCols()) {
+        memset(&cell, 0, sizeof(VTermScreenCell));
+        term->getCellLocked(pos, &cell);
 
         if (colSize == 0) {
-            env->SetIntField(run, cellRunFgField, toArgb(&cell.fg));
-            env->SetIntField(run, cellRunBgField, toArgb(&cell.bg));
+            env->SetIntField(run, cellRunFgField, toArgb(cell.fg));
+            env->SetIntField(run, cellRunBgField, toArgb(cell.bg));
+            memcpy(&firstCell, &cell, sizeof(VTermScreenCell));
         } else {
-            if (!isCellStyleEqual(&cell, &prevCell)) {
+            if (!isCellStyleEqual(cell, firstCell)) {
                 break;
             }
         }
-        memcpy(&prevCell, &cell, sizeof(VTermScreenCell));
 
         // Only include cell chars if they fit into run
         uint32_t rawCell = cell.chars[0];
-        unsigned int size = (rawCell < 0x10000) ? 1 : 2;
+        size_t size = (rawCell < 0x10000) ? 1 : 2;
         if (dataSize + size <= data.size()) {
             if (rawCell < 0x10000) {
                 data[dataSize++] = rawCell;
@@ -560,6 +663,11 @@ static jint com_android_terminal_Terminal_nativeGetCols(JNIEnv* env, jclass claz
     return term->getCols();
 }
 
+static jint com_android_terminal_Terminal_nativeGetScrollRows(JNIEnv* env, jclass clazz, jint ptr) {
+    Terminal* term = reinterpret_cast<Terminal*>(ptr);
+    return term->getScrollRows();
+}
+
 static jboolean com_android_terminal_Terminal_nativeDispatchCharacter(JNIEnv *env, jclass clazz,
         jint ptr, jint mod, jint c) {
     Terminal* term = reinterpret_cast<Terminal*>(ptr);
@@ -574,13 +682,13 @@ static jboolean com_android_terminal_Terminal_nativeDispatchKey(JNIEnv *env, jcl
 
 static JNINativeMethod gMethods[] = {
     { "nativeInit", "(Lcom/android/terminal/TerminalCallbacks;II)I", (void*)com_android_terminal_Terminal_nativeInit },
+    { "nativeDestroy", "(I)I", (void*)com_android_terminal_Terminal_nativeDestroy },
     { "nativeRun", "(I)I", (void*)com_android_terminal_Terminal_nativeRun },
-    { "nativeStop", "(I)I", (void*)com_android_terminal_Terminal_nativeStop },
-    { "nativeFlushDamage", "(I)I", (void*)com_android_terminal_Terminal_nativeFlushDamage },
-    { "nativeResize", "(III)I", (void*)com_android_terminal_Terminal_nativeResize },
+    { "nativeResize", "(IIII)I", (void*)com_android_terminal_Terminal_nativeResize },
     { "nativeGetCellRun", "(IIILcom/android/terminal/Terminal$CellRun;)I", (void*)com_android_terminal_Terminal_nativeGetCellRun },
     { "nativeGetRows", "(I)I", (void*)com_android_terminal_Terminal_nativeGetRows },
     { "nativeGetCols", "(I)I", (void*)com_android_terminal_Terminal_nativeGetCols },
+    { "nativeGetScrollRows", "(I)I", (void*)com_android_terminal_Terminal_nativeGetScrollRows },
     { "nativeDispatchCharacter", "(III)Z", (void*)com_android_terminal_Terminal_nativeDispatchCharacter},
     { "nativeDispatchKey", "(III)Z", (void*)com_android_terminal_Terminal_nativeDispatchKey },
 };
@@ -592,7 +700,6 @@ int register_com_android_terminal_Terminal(JNIEnv* env) {
     android::terminalCallbacksClass = reinterpret_cast<jclass>(env->NewGlobalRef(localClass.get()));
 
     android::damageMethod = env->GetMethodID(terminalCallbacksClass, "damage", "(IIII)I");
-    android::prescrollMethod = env->GetMethodID(terminalCallbacksClass, "prescroll", "(IIII)I");
     android::moveRectMethod = env->GetMethodID(terminalCallbacksClass, "moveRect", "(IIIIIIII)I");
     android::moveCursorMethod = env->GetMethodID(terminalCallbacksClass, "moveCursor",
             "(IIIII)I");
@@ -605,7 +712,6 @@ int register_com_android_terminal_Terminal(JNIEnv* env) {
     android::setTermPropColorMethod = env->GetMethodID(terminalCallbacksClass, "setTermPropColor",
             "(IIII)I");
     android::bellMethod = env->GetMethodID(terminalCallbacksClass, "bell", "()I");
-    android::resizeMethod = env->GetMethodID(terminalCallbacksClass, "resize", "(II)I");
 
     ScopedLocalRef<jclass> cellRunLocal(env,
             env->FindClass("com/android/terminal/Terminal$CellRun"));
@@ -615,8 +721,6 @@ int register_com_android_terminal_Terminal(JNIEnv* env) {
     cellRunColSizeField = env->GetFieldID(cellRunClass, "colSize", "I");
     cellRunFgField = env->GetFieldID(cellRunClass, "fg", "I");
     cellRunBgField = env->GetFieldID(cellRunClass, "bg", "I");
-
-    env->GetJavaVM(&gJavaVM);
 
     return jniRegisterNativeMethods(env, "com/android/terminal/Terminal",
             gMethods, NELEM(gMethods));

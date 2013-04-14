@@ -21,7 +21,7 @@ import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
 import android.view.View;
 
-public class TerminalKeys implements View.OnKeyListener {
+public class TerminalKeys {
     private static final String TAG = "TerminalKeys";
     private static final boolean DEBUG = true;
     // Taken from vterm_input.h

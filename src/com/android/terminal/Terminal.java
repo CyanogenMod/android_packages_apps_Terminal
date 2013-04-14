@@ -22,7 +22,9 @@ import android.graphics.Color;
  * Single terminal session backed by a pseudo terminal on the local device.
  */
 public class Terminal {
-    private static final String TAG = "Terminal";
+    public static final String TAG = "Terminal";
+
+    public final int key;
 
     private static int sNumber = 0;
 
@@ -46,15 +48,17 @@ public class Terminal {
         boolean strike;
         int font;
 
-        int fg = Color.RED;
-        int bg = Color.BLUE;
+        int fg = Color.CYAN;
+        int bg = Color.DKGRAY;
     }
 
+    // NOTE: clients must not call back into terminal while handling a callback,
+    // since native mutex isn't reentrant.
     public interface TerminalClient {
-        public void damage(int startRow, int endRow, int startCol, int endCol);
-        public void moveRect(int destStartRow, int destEndRow, int destStartCol, int destEndCol,
+        public void onDamage(int startRow, int endRow, int startCol, int endCol);
+        public void onMoveRect(int destStartRow, int destEndRow, int destStartCol, int destEndCol,
                 int srcStartRow, int srcEndRow, int srcStartCol, int srcEndCol);
-        public void bell();
+        public void onBell();
     }
 
     private final int mNativePtr;
@@ -68,7 +72,7 @@ public class Terminal {
         @Override
         public int damage(int startRow, int endRow, int startCol, int endCol) {
             if (mClient != null) {
-                mClient.damage(startRow, endRow, startCol, endCol);
+                mClient.onDamage(startRow, endRow, startCol, endCol);
             }
             return 1;
         }
@@ -77,7 +81,7 @@ public class Terminal {
         public int moveRect(int destStartRow, int destEndRow, int destStartCol, int destEndCol,
                 int srcStartRow, int srcEndRow, int srcStartCol, int srcEndCol) {
             if (mClient != null) {
-                mClient.moveRect(destStartRow, destEndRow, destStartCol, destEndCol, srcStartRow,
+                mClient.onMoveRect(destStartRow, destEndRow, destStartCol, destEndCol, srcStartRow,
                         srcEndRow, srcStartCol, srcEndCol);
             }
             return 1;
@@ -86,7 +90,7 @@ public class Terminal {
         @Override
         public int bell() {
             if (mClient != null) {
-                mClient.bell();
+                mClient.onBell();
             }
             return 1;
         }
@@ -94,8 +98,9 @@ public class Terminal {
 
     public Terminal() {
         mNativePtr = nativeInit(mCallbacks, 25, 80);
-        mTitle = TAG + " " + sNumber++;
-        mThread = new Thread(TAG) {
+        key = sNumber++;
+        mTitle = TAG + " " + key;
+        mThread = new Thread(mTitle) {
             @Override
             public void run() {
                 nativeRun(mNativePtr);
@@ -110,9 +115,9 @@ public class Terminal {
         mThread.start();
     }
 
-    public void stop() {
-        if (nativeStop(mNativePtr) != 0) {
-            throw new IllegalStateException("stop failed");
+    public void destroy() {
+        if (nativeDestroy(mNativePtr) != 0) {
+            throw new IllegalStateException("destroy failed");
         }
     }
 
@@ -120,14 +125,8 @@ public class Terminal {
         mClient = client;
     }
 
-    public void flushDamage() {
-        if (nativeFlushDamage(mNativePtr) != 0) {
-            throw new IllegalStateException("flushDamage failed");
-        }
-    }
-
-    public void resize(int rows, int cols) {
-        if (nativeResize(mNativePtr, rows, cols) != 0) {
+    public void resize(int rows, int cols, int scrollRows) {
+        if (nativeResize(mNativePtr, rows, cols, scrollRows) != 0) {
             throw new IllegalStateException("resize failed");
         }
     }
@@ -138,6 +137,10 @@ public class Terminal {
 
     public int getCols() {
         return nativeGetCols(mNativePtr);
+    }
+
+    public int getScrollRows() {
+        return nativeGetScrollRows(mNativePtr);
     }
 
     public void getCellRun(int row, int col, CellRun run) {
@@ -159,16 +162,15 @@ public class Terminal {
         return nativeDispatchCharacter(mNativePtr, modifiers, character);
     }
 
-
     private static native int nativeInit(TerminalCallbacks callbacks, int rows, int cols);
-    private static native int nativeRun(int ptr);
-    private static native int nativeStop(int ptr);
+    private static native int nativeDestroy(int ptr);
 
-    private static native int nativeFlushDamage(int ptr);
-    private static native int nativeResize(int ptr, int rows, int cols);
+    private static native int nativeRun(int ptr);
+    private static native int nativeResize(int ptr, int rows, int cols, int scrollRows);
     private static native int nativeGetCellRun(int ptr, int row, int col, CellRun run);
     private static native int nativeGetRows(int ptr);
     private static native int nativeGetCols(int ptr);
+    private static native int nativeGetScrollRows(int ptr);
 
     private static native boolean nativeDispatchKey(int ptr, int modifiers, int key);
     private static native boolean nativeDispatchCharacter(int ptr, int modifiers, int character);

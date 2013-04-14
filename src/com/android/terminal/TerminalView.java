@@ -16,20 +16,23 @@
 
 package com.android.terminal;
 
+import static com.android.terminal.Terminal.TAG;
+
 import android.content.Context;
-import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Paint.FontMetrics;
-import android.graphics.Rect;
 import android.graphics.Typeface;
-import android.os.SystemClock;
+import android.os.Parcelable;
+import android.util.AttributeSet;
 import android.util.Log;
+import android.view.KeyEvent;
+import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.BaseInputConnection;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
-import android.view.KeyEvent;
-import android.view.View;
+import android.widget.BaseAdapter;
+import android.widget.ListView;
 
 import com.android.terminal.Terminal.CellRun;
 import com.android.terminal.Terminal.TerminalClient;
@@ -37,93 +40,216 @@ import com.android.terminal.Terminal.TerminalClient;
 /**
  * Rendered contents of a {@link Terminal} session.
  */
-public class TerminalView extends View {
-    private static final String TAG = "Terminal";
+public class TerminalView extends ListView {
     private static final boolean LOGD = true;
 
-    private static final int MAX_RUN_LENGTH = 128;
-
-    private final Context mContext;
-
-    private final Paint mBgPaint = new Paint();
-    private final Paint mTextPaint = new Paint();
-
-    /** Run of cells used when drawing */
-    private final CellRun mRun;
-    /** Screen coordinates to draw chars into */
-    private final float[] mPos;
+    private static final boolean SCROLL_ON_DAMAGE = false;
+    private static final boolean SCROLL_ON_INPUT = true;
 
     private Terminal mTerm;
 
-    private TerminalKeys mTermKeys;
+    private boolean mScrolled;
 
-    private int mCharTop;
-    private int mCharWidth;
-    private int mCharHeight;
+    private int mRows;
+    private int mCols;
+    private int mScrollRows;
 
-    // TODO: for atomicity we might need to snapshot runs when processing
-    // callbacks driven by vterm thread
+    private final TerminalMetrics mMetrics = new TerminalMetrics();
+    private final TerminalKeys mTermKeys = new TerminalKeys();
 
-    private TerminalClient mClient = new TerminalClient() {
-        @Override
-        public void damage(int startRow, int endRow, int startCol, int endCol) {
-            if (LOGD) Log.d(TAG, "damage(" + startRow + ", " + endRow + ", " + startCol + ", " + endCol + ")");
+    /**
+     * Metrics shared between all {@link TerminalLineView} children. Locking
+     * provided by main thread.
+     */
+    static class TerminalMetrics {
+        private static final int MAX_RUN_LENGTH = 128;
 
-            // Invalidate region on screen
-            final int top = startRow * mCharHeight;
-            final int bottom = (endRow + 1) * mCharHeight;
-            final int left = startCol * mCharWidth;
-            final int right = (endCol + 1) * mCharWidth;
-            postInvalidate(left, top, right, bottom);
+        final Paint bgPaint = new Paint();
+        final Paint textPaint = new Paint();
+
+        /** Run of cells used when drawing */
+        final CellRun run;
+        /** Screen coordinates to draw chars into */
+        final float[] pos;
+
+        int charTop;
+        int charWidth;
+        int charHeight;
+
+        public TerminalMetrics() {
+            run = new Terminal.CellRun();
+            run.data = new char[MAX_RUN_LENGTH];
+
+            // Positions of each possible cell
+            // TODO: make sure this works with surrogate pairs
+            pos = new float[MAX_RUN_LENGTH * 2];
+            setTextSize(20);
         }
 
-        @Override
-        public void moveRect(int destStartRow, int destEndRow, int destStartCol, int destEndCol,
-                int srcStartRow, int srcEndRow, int srcStartCol, int srcEndCol) {
-            // Treat as normal damage and perform full redraw
-            final int startRow = Math.min(destStartRow, srcStartRow);
-            final int endRow = Math.max(destEndRow, srcEndRow);
-            final int startCol = Math.min(destStartCol, srcStartCol);
-            final int endCol = Math.max(destEndCol, srcEndCol);
-            damage(startRow, endRow, startCol, endCol);
-        }
+        public void setTextSize(float textSize) {
+            textPaint.setTypeface(Typeface.MONOSPACE);
+            textPaint.setAntiAlias(true);
+            textPaint.setTextSize(textSize);
 
+            // Read metrics to get exact pixel dimensions
+            final FontMetrics fm = textPaint.getFontMetrics();
+            charTop = (int) Math.ceil(fm.top);
+
+            final float[] widths = new float[1];
+            textPaint.getTextWidths("X", widths);
+            charWidth = (int) Math.ceil(widths[0]);
+            charHeight = (int) Math.ceil(fm.descent - fm.top);
+
+            // Update drawing positions
+            for (int i = 0; i < MAX_RUN_LENGTH; i++) {
+                pos[i * 2] = i * charWidth;
+                pos[(i * 2) + 1] = -charTop;
+            }
+        }
+    }
+
+    private final Runnable mDamageRunnable = new Runnable() {
         @Override
-        public void bell() {
-            Log.i(TAG, "DING!");
+        public void run() {
+            invalidateViews();
+            if (SCROLL_ON_DAMAGE) {
+                scrollToBottom(true);
+            }
         }
     };
 
     public TerminalView(Context context) {
-        super(context);
-        mContext = context;
+        this(context, null);
+    }
 
-        mRun = new Terminal.CellRun();
-        mRun.data = new char[MAX_RUN_LENGTH];
+    public TerminalView(Context context, AttributeSet attrs) {
+        this(context, attrs, com.android.internal.R.attr.listViewStyle);
+    }
 
-        // Positions of each possible cell
-        // TODO: make sure this works with surrogate pairs
-        mPos = new float[MAX_RUN_LENGTH * 2];
+    public TerminalView(Context context, AttributeSet attrs, int defStyle) {
+        super(context, attrs, defStyle);
 
-        setBackgroundColor(Color.BLACK);
-        setTextSize(20);
+        setBackground(null);
+        setDivider(null);
 
-        // TODO: remove this test code that triggers invalidates
-        setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                v.invalidate();
-                v.requestFocus();
-            }
-        });
-
-        // Set view properties
         setFocusable(true);
         setFocusableInTouchMode(true);
-        setScrollContainer(true);
 
-        mTermKeys = new TerminalKeys();
-        setOnKeyListener(mTermKeys);
+        setAdapter(mAdapter);
+        setOnKeyListener(mKeyListener);
+    }
+
+    private final BaseAdapter mAdapter = new BaseAdapter() {
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            final TerminalLineView view;
+            if (convertView != null) {
+                view = (TerminalLineView) convertView;
+            } else {
+                view = new TerminalLineView(parent.getContext(), mTerm, mMetrics);
+            }
+
+            view.pos = position;
+            view.row = posToRow(position);
+            view.cols = mCols;
+            return view;
+        }
+
+        @Override
+        public long getItemId(int position) {
+            return position;
+        }
+
+        @Override
+        public Object getItem(int position) {
+            return null;
+        }
+
+        @Override
+        public int getCount() {
+            if (mTerm != null) {
+                return mRows + mScrollRows;
+            } else {
+                return 0;
+            }
+        }
+    };
+
+    private TerminalClient mClient = new TerminalClient() {
+        @Override
+        public void onDamage(final int startRow, final int endRow, int startCol, int endCol) {
+            post(mDamageRunnable);
+        }
+
+        @Override
+        public void onMoveRect(int destStartRow, int destEndRow, int destStartCol, int destEndCol,
+                int srcStartRow, int srcEndRow, int srcStartCol, int srcEndCol) {
+            post(mDamageRunnable);
+        }
+
+        @Override
+        public void onBell() {
+            Log.i(TAG, "DING!");
+        }
+    };
+
+    private int rowToPos(int row) {
+        return row + mScrollRows;
+    }
+
+    private int posToRow(int pos) {
+        return pos - mScrollRows;
+    }
+
+    private View.OnKeyListener mKeyListener = new OnKeyListener() {
+        @Override
+        public boolean onKey(View v, int keyCode, KeyEvent event) {
+            final boolean res = mTermKeys.onKey(v, keyCode, event);
+            if (res && SCROLL_ON_INPUT) {
+                scrollToBottom(true);
+            }
+            return res;
+        }
+    };
+
+    @Override
+    public void onRestoreInstanceState(Parcelable state) {
+        super.onRestoreInstanceState(state);
+        mScrolled = true;
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        if (!mScrolled) {
+            scrollToBottom(false);
+        }
+    }
+
+    @Override
+    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+        super.onSizeChanged(w, h, oldw, oldh);
+
+        final int rows = h / mMetrics.charHeight;
+        final int cols = w / mMetrics.charWidth;
+        final int scrollRows = mScrollRows;
+
+        final boolean sizeChanged = (rows != mRows || cols != mCols || scrollRows != mScrollRows);
+        if (mTerm != null && sizeChanged) {
+            mTerm.resize(rows, cols, scrollRows);
+
+            mRows = rows;
+            mCols = cols;
+            mScrollRows = scrollRows;
+
+            mAdapter.notifyDataSetChanged();
+        }
+    }
+
+    public void scrollToBottom(boolean animate) {
+        final int dur = animate ? 250 : 0;
+        smoothScrollToPositionFromTop(getCount(), 0, dur);
+        mScrolled = true;
     }
 
     public void setTerminal(Terminal term) {
@@ -132,124 +258,28 @@ public class TerminalView extends View {
             orig.setClient(null);
         }
         mTerm = term;
+        mScrolled = false;
         if (term != null) {
             term.setClient(mClient);
             mTermKeys.setTerminal(term);
-        }
-        updateTerminalSize();
-    }
 
-    @Override
-    protected void onAttachedToWindow() {
-        super.onAttachedToWindow();
-        if (mTerm != null) {
-            mTerm.setClient(mClient);
+            // Populate any current settings
+            mRows = mTerm.getRows();
+            mCols = mTerm.getCols();
+            mScrollRows = mTerm.getScrollRows();
+            mAdapter.notifyDataSetChanged();
         }
     }
 
-    @Override
-    protected void onDetachedFromWindow() {
-        super.onDetachedFromWindow();
-        if (mTerm != null) {
-            mTerm.setClient(null);
-        }
+    public Terminal getTerminal() {
+        return mTerm;
     }
 
     public void setTextSize(float textSize) {
-        mTextPaint.setTypeface(Typeface.MONOSPACE);
-        mTextPaint.setAntiAlias(true);
-        mTextPaint.setTextSize(textSize);
+        mMetrics.setTextSize(textSize);
 
-        // Read metrics to get exact pixel dimensions
-        final FontMetrics fm = mTextPaint.getFontMetrics();
-        mCharTop = (int) Math.ceil(fm.top);
-
-        final float[] widths = new float[1];
-        mTextPaint.getTextWidths("X", widths);
-        mCharWidth = (int) Math.ceil(widths[0]);
-        mCharHeight = (int) Math.ceil(fm.descent - fm.top);
-
-        // Update drawing positions
-        for (int i = 0; i < MAX_RUN_LENGTH; i++) {
-            mPos[i * 2] = i * mCharWidth;
-            mPos[(i * 2) + 1] = -mCharTop;
-        }
-
-        updateTerminalSize();
-    }
-
-    /**
-     * Determine terminal dimensions based on current dimensions and font size,
-     * and request that {@link Terminal} change to that size.
-     */
-    public void updateTerminalSize() {
-        if (getWidth() > 0 && getHeight() > 0 && mTerm != null) {
-            final int rows = getHeight() / mCharHeight;
-            final int cols = getWidth() / mCharWidth;
-            mTerm.resize(rows, cols);
-        }
-    }
-
-    @Override
-    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
-        super.onLayout(changed, left, top, right, bottom);
-        if (changed) {
-            updateTerminalSize();
-        }
-    }
-
-    @Override
-    protected void onDraw(Canvas canvas) {
-        super.onDraw(canvas);
-
-        if (mTerm == null) {
-            Log.w(TAG, "onDraw() without a terminal");
-            canvas.drawColor(Color.MAGENTA);
-            return;
-        }
-
-        final long start = SystemClock.elapsedRealtime();
-
-        // Only draw dirty region of console
-        final Rect dirty = canvas.getClipBounds();
-
-        final int rows = mTerm.getRows();
-        final int cols = mTerm.getCols();
-
-        final int startRow = dirty.top / mCharHeight;
-        final int endRow = Math.min(dirty.bottom / mCharHeight, rows - 1);
-        final int startCol = dirty.left / mCharWidth;
-        final int endCol = Math.min(dirty.right / mCharWidth, cols - 1);
-
-        final CellRun run = mRun;
-        final float[] pos = mPos;
-
-        for (int row = startRow; row <= endRow; row++) {
-            for (int col = startCol; col <= endCol;) {
-                mTerm.getCellRun(row, col, run);
-
-                mBgPaint.setColor(run.bg);
-                mTextPaint.setColor(run.fg);
-
-                final int y = row * mCharHeight;
-                final int x = col * mCharWidth;
-                final int xEnd = x + (run.colSize * mCharWidth);
-
-                canvas.save(Canvas.MATRIX_SAVE_FLAG | Canvas.CLIP_SAVE_FLAG);
-                canvas.translate(x, y);
-                canvas.clipRect(0, 0, run.colSize * mCharWidth, mCharHeight);
-
-                canvas.drawPaint(mBgPaint);
-                canvas.drawPosText(run.data, 0, run.dataSize, pos, mTextPaint);
-
-                canvas.restore();
-
-                col += run.colSize;
-            }
-        }
-
-        final long delta = SystemClock.elapsedRealtime() - start;
-        if (LOGD) Log.d(TAG, "onDraw() took " + delta + "ms");
+        // Layout will kick off terminal resize when needed
+        requestLayout();
     }
 
     @Override

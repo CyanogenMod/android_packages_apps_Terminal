@@ -20,19 +20,14 @@ import android.app.Service;
 import android.content.Intent;
 import android.os.Binder;
 import android.os.IBinder;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import android.util.SparseArray;
 
 /**
  * Background service that keeps {@link Terminal} instances running and warm
  * when UI isn't present.
  */
 public class TerminalService extends Service {
-    private static final String TAG = "Terminal";
-
-    private final ArrayList<Terminal> mTerminals = new ArrayList<Terminal>();
+    private final SparseArray<Terminal> mTerminals = new SparseArray<Terminal>();
 
     public class ServiceBinder extends Binder {
         public TerminalService getService() {
@@ -45,28 +40,29 @@ public class TerminalService extends Service {
         return new ServiceBinder();
     }
 
-    public List<Terminal> getTerminals() {
-        return Collections.unmodifiableList(mTerminals);
+    public SparseArray<Terminal> getTerminals() {
+        return mTerminals;
     }
 
-    public Terminal createTerminal() {
+    public int createTerminal() {
         // If our first terminal, start ourselves as long-lived service
-        if (mTerminals.isEmpty()) {
+        if (mTerminals.size() == 0) {
             startService(new Intent(this, TerminalService.class));
         }
 
         final Terminal term = new Terminal();
         term.start();
-        mTerminals.add(term);
-        return term;
+        mTerminals.put(term.key, term);
+        return term.key;
     }
 
-    public void destroyTerminal(Terminal term) {
-        term.stop();
-        mTerminals.remove(term);
+    public void destroyTerminal(int key) {
+        final Terminal term = mTerminals.get(key);
+        term.destroy();
+        mTerminals.delete(key);
 
         // If our last terminal, tear down long-lived service
-        if (mTerminals.isEmpty()) {
+        if (mTerminals.size() == 0) {
             stopService(new Intent(this, TerminalService.class));
         }
     }

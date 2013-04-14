@@ -16,6 +16,8 @@
 
 package com.android.terminal;
 
+import static com.android.terminal.Terminal.TAG;
+
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
@@ -23,10 +25,12 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.os.Parcelable;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.PagerTitleStrip;
 import android.support.v4.view.ViewPager;
 import android.util.Log;
+import android.util.SparseArray;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -37,7 +41,6 @@ import android.view.ViewGroup;
  * {@link TerminalService}.
  */
 public class TerminalActivity extends Activity {
-    private static final String TAG = "Terminal";
 
     private TerminalService mService;
 
@@ -59,6 +62,7 @@ public class TerminalActivity extends Activity {
 
             // Bind UI to known terminals
             mTermAdapter.notifyDataSetChanged();
+            invalidateOptionsMenu();
         }
 
         @Override
@@ -69,6 +73,9 @@ public class TerminalActivity extends Activity {
     };
 
     private final PagerAdapter mTermAdapter = new PagerAdapter() {
+        private SparseArray<SparseArray<Parcelable>>
+                mSavedState = new SparseArray<SparseArray<Parcelable>>();
+
         @Override
         public int getCount() {
             if (mService != null) {
@@ -80,9 +87,17 @@ public class TerminalActivity extends Activity {
 
         @Override
         public Object instantiateItem(ViewGroup container, int position) {
-            final Terminal term = mService.getTerminals().get(position);
             final TerminalView view = new TerminalView(container.getContext());
+            view.setId(android.R.id.list);
+
+            final Terminal term = mService.getTerminals().valueAt(position);
             view.setTerminal(term);
+
+            final SparseArray<Parcelable> state = mSavedState.get(term.key);
+            if (state != null) {
+                view.restoreHierarchyState(state);
+            }
+
             container.addView(view);
             return view;
         }
@@ -90,13 +105,24 @@ public class TerminalActivity extends Activity {
         @Override
         public void destroyItem(ViewGroup container, int position, Object object) {
             final TerminalView view = (TerminalView) object;
+
+            final int key = view.getTerminal().key;
+            SparseArray<Parcelable> state = mSavedState.get(key);
+            if (state == null) {
+                state = new SparseArray<Parcelable>();
+                mSavedState.put(key, state);
+            }
+            view.saveHierarchyState(state);
+
             view.setTerminal(null);
             container.removeView(view);
         }
 
         @Override
         public int getItemPosition(Object object) {
-            final int index = mService.getTerminals().indexOf(object);
+            final TerminalView view = (TerminalView) object;
+            final int key = view.getTerminal().key;
+            final int index = mService.getTerminals().indexOfKey(key);
             if (index == -1) {
                 return POSITION_NONE;
             } else {
@@ -111,7 +137,7 @@ public class TerminalActivity extends Activity {
 
         @Override
         public CharSequence getPageTitle(int position) {
-            return mService.getTerminals().get(position).getTitle();
+            return mService.getTerminals().valueAt(position).getTitle();
         }
     };
 
@@ -147,21 +173,29 @@ public class TerminalActivity extends Activity {
     }
 
     @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        super.onPrepareOptionsMenu(menu);
+        menu.findItem(R.id.menu_close_tab).setEnabled(mTermAdapter.getCount() > 0);
+        return true;
+    }
+
+    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.menu_new_tab: {
                 mService.createTerminal();
                 mTermAdapter.notifyDataSetChanged();
+                invalidateOptionsMenu();
                 final int index = mService.getTerminals().size() - 1;
                 mPager.setCurrentItem(index, true);
                 return true;
             }
             case R.id.menu_close_tab: {
                 final int index = mPager.getCurrentItem();
-                final Terminal term = mService.getTerminals().get(index);
-                mService.destroyTerminal(term);
-                // TODO: ask adamp about buggy zero item behavior
+                final int key = mService.getTerminals().keyAt(index);
+                mService.destroyTerminal(key);
                 mTermAdapter.notifyDataSetChanged();
+                invalidateOptionsMenu();
                 return true;
             }
         }
