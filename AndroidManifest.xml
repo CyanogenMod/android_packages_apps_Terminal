@@ -18,7 +18,6 @@
 
     <application
         android:label="@string/app_label"
-        android:persistent="true"
         android:enabled="false">
 
         <activity
