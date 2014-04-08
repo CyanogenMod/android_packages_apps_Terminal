@@ -61,7 +61,7 @@ public class Terminal {
         public void onBell();
     }
 
-    private final int mNativePtr;
+    private final long mNativePtr;
     private final Thread mThread;
 
     private String mTitle;
@@ -162,16 +162,16 @@ public class Terminal {
         return nativeDispatchCharacter(mNativePtr, modifiers, character);
     }
 
-    private static native int nativeInit(TerminalCallbacks callbacks, int rows, int cols);
-    private static native int nativeDestroy(int ptr);
+    private static native long nativeInit(TerminalCallbacks callbacks, int rows, int cols);
+    private static native int nativeDestroy(long ptr);
 
-    private static native int nativeRun(int ptr);
-    private static native int nativeResize(int ptr, int rows, int cols, int scrollRows);
-    private static native int nativeGetCellRun(int ptr, int row, int col, CellRun run);
-    private static native int nativeGetRows(int ptr);
-    private static native int nativeGetCols(int ptr);
-    private static native int nativeGetScrollRows(int ptr);
+    private static native int nativeRun(long ptr);
+    private static native int nativeResize(long ptr, int rows, int cols, int scrollRows);
+    private static native int nativeGetCellRun(long ptr, int row, int col, CellRun run);
+    private static native int nativeGetRows(long ptr);
+    private static native int nativeGetCols(long ptr);
+    private static native int nativeGetScrollRows(long ptr);
 
-    private static native boolean nativeDispatchKey(int ptr, int modifiers, int key);
-    private static native boolean nativeDispatchCharacter(int ptr, int modifiers, int character);
+    private static native boolean nativeDispatchKey(long ptr, int modifiers, int key);
+    private static native boolean nativeDispatchCharacter(long ptr, int modifiers, int character);
 }

@@ -550,24 +550,24 @@ jobject Terminal::getCallbacks() const {
  * JNI glue
  */
 
-static jint com_android_terminal_Terminal_nativeInit(JNIEnv* env, jclass clazz, jobject callbacks,
+static jlong com_android_terminal_Terminal_nativeInit(JNIEnv* env, jclass clazz, jobject callbacks,
         jint rows, jint cols) {
-    return reinterpret_cast<jint>(new Terminal(callbacks, rows, cols));
+    return reinterpret_cast<jlong>(new Terminal(callbacks, rows, cols));
 }
 
-static jint com_android_terminal_Terminal_nativeDestroy(JNIEnv* env, jclass clazz, jint ptr) {
+static jint com_android_terminal_Terminal_nativeDestroy(JNIEnv* env, jclass clazz, jlong ptr) {
     Terminal* term = reinterpret_cast<Terminal*>(ptr);
     delete term;
     return 0;
 }
 
-static jint com_android_terminal_Terminal_nativeRun(JNIEnv* env, jclass clazz, jint ptr) {
+static jint com_android_terminal_Terminal_nativeRun(JNIEnv* env, jclass clazz, jlong ptr) {
     Terminal* term = reinterpret_cast<Terminal*>(ptr);
     return term->run();
 }
 
 static jint com_android_terminal_Terminal_nativeResize(JNIEnv* env,
-        jclass clazz, jint ptr, jint rows, jint cols, jint scrollRows) {
+        jclass clazz, jlong ptr, jint rows, jint cols, jint scrollRows) {
     Terminal* term = reinterpret_cast<Terminal*>(ptr);
     return term->resize(rows, cols, scrollRows);
 }
@@ -592,7 +592,7 @@ static inline bool isCellStyleEqual(const VTermScreenCell& a, const VTermScreenC
 }
 
 static jint com_android_terminal_Terminal_nativeGetCellRun(JNIEnv* env,
-        jclass clazz, jint ptr, jint row, jint col, jobject run) {
+        jclass clazz, jlong ptr, jint row, jint col, jobject run) {
     Terminal* term = reinterpret_cast<Terminal*>(ptr);
     Mutex::Autolock lock(term->mLock);
 
@@ -653,44 +653,44 @@ static jint com_android_terminal_Terminal_nativeGetCellRun(JNIEnv* env,
     return 0;
 }
 
-static jint com_android_terminal_Terminal_nativeGetRows(JNIEnv* env, jclass clazz, jint ptr) {
+static jint com_android_terminal_Terminal_nativeGetRows(JNIEnv* env, jclass clazz, jlong ptr) {
     Terminal* term = reinterpret_cast<Terminal*>(ptr);
     return term->getRows();
 }
 
-static jint com_android_terminal_Terminal_nativeGetCols(JNIEnv* env, jclass clazz, jint ptr) {
+static jint com_android_terminal_Terminal_nativeGetCols(JNIEnv* env, jclass clazz, jlong ptr) {
     Terminal* term = reinterpret_cast<Terminal*>(ptr);
     return term->getCols();
 }
 
-static jint com_android_terminal_Terminal_nativeGetScrollRows(JNIEnv* env, jclass clazz, jint ptr) {
+static jint com_android_terminal_Terminal_nativeGetScrollRows(JNIEnv* env, jclass clazz, jlong ptr) {
     Terminal* term = reinterpret_cast<Terminal*>(ptr);
     return term->getScrollRows();
 }
 
 static jboolean com_android_terminal_Terminal_nativeDispatchCharacter(JNIEnv *env, jclass clazz,
-        jint ptr, jint mod, jint c) {
+        jlong ptr, jint mod, jint c) {
     Terminal* term = reinterpret_cast<Terminal*>(ptr);
     return term->dispatchCharacter(mod, c);
 }
 
 static jboolean com_android_terminal_Terminal_nativeDispatchKey(JNIEnv *env, jclass clazz,
-        jint ptr, jint mod, jint c) {
+        jlong ptr, jint mod, jint c) {
     Terminal* term = reinterpret_cast<Terminal*>(ptr);
     return term->dispatchKey(mod, c);
 }
 
 static JNINativeMethod gMethods[] = {
-    { "nativeInit", "(Lcom/android/terminal/TerminalCallbacks;II)I", (void*)com_android_terminal_Terminal_nativeInit },
-    { "nativeDestroy", "(I)I", (void*)com_android_terminal_Terminal_nativeDestroy },
-    { "nativeRun", "(I)I", (void*)com_android_terminal_Terminal_nativeRun },
-    { "nativeResize", "(IIII)I", (void*)com_android_terminal_Terminal_nativeResize },
-    { "nativeGetCellRun", "(IIILcom/android/terminal/Terminal$CellRun;)I", (void*)com_android_terminal_Terminal_nativeGetCellRun },
-    { "nativeGetRows", "(I)I", (void*)com_android_terminal_Terminal_nativeGetRows },
-    { "nativeGetCols", "(I)I", (void*)com_android_terminal_Terminal_nativeGetCols },
-    { "nativeGetScrollRows", "(I)I", (void*)com_android_terminal_Terminal_nativeGetScrollRows },
-    { "nativeDispatchCharacter", "(III)Z", (void*)com_android_terminal_Terminal_nativeDispatchCharacter},
-    { "nativeDispatchKey", "(III)Z", (void*)com_android_terminal_Terminal_nativeDispatchKey },
+    { "nativeInit", "(Lcom/android/terminal/TerminalCallbacks;II)L", (void*)com_android_terminal_Terminal_nativeInit },
+    { "nativeDestroy", "(J)I", (void*)com_android_terminal_Terminal_nativeDestroy },
+    { "nativeRun", "(J)I", (void*)com_android_terminal_Terminal_nativeRun },
+    { "nativeResize", "(JIII)I", (void*)com_android_terminal_Terminal_nativeResize },
+    { "nativeGetCellRun", "(JIILcom/android/terminal/Terminal$CellRun;)I", (void*)com_android_terminal_Terminal_nativeGetCellRun },
+    { "nativeGetRows", "(J)I", (void*)com_android_terminal_Terminal_nativeGetRows },
+    { "nativeGetCols", "(J)I", (void*)com_android_terminal_Terminal_nativeGetCols },
+    { "nativeGetScrollRows", "(J)I", (void*)com_android_terminal_Terminal_nativeGetScrollRows },
+    { "nativeDispatchCharacter", "(JII)Z", (void*)com_android_terminal_Terminal_nativeDispatchCharacter},
+    { "nativeDispatchKey", "(JII)Z", (void*)com_android_terminal_Terminal_nativeDispatchKey },
 };
 
 int register_com_android_terminal_Terminal(JNIEnv* env) {
