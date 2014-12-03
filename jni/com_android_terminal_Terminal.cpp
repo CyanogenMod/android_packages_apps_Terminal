@@ -20,13 +20,13 @@
 #include <utils/Mutex.h>
 #include "android_runtime/AndroidRuntime.h"
 
-#include "forkpty.h"
 #include "jni.h"
 #include "JNIHelp.h"
 #include "ScopedLocalRef.h"
 #include "ScopedPrimitiveArray.h"
 
 #include <fcntl.h>
+#include <pty.h>
 #include <stdio.h>
 #include <termios.h>
 #include <unistd.h>
@@ -201,8 +201,8 @@ static int term_settermprop(VTermProp prop, VTermValue *val, void *user) {
     JNIEnv* env = AndroidRuntime::getJNIEnv();
     switch (vterm_get_prop_type(prop)) {
     case VTERM_VALUETYPE_BOOL:
-        return env->CallIntMethod(term->getCallbacks(), setTermPropBooleanMethod,
-                static_cast<jboolean>(val->boolean));
+        return env->CallIntMethod(term->getCallbacks(), setTermPropBooleanMethod, prop,
+                val->boolean ? JNI_TRUE : JNI_FALSE);
     case VTERM_VALUETYPE_INT:
         return env->CallIntMethod(term->getCallbacks(), setTermPropIntMethod, prop, val->number);
     case VTERM_VALUETYPE_STRING:
@@ -300,13 +300,12 @@ Terminal::~Terminal() {
 }
 
 status_t Terminal::run() {
-    struct termios termios = {
-        .c_iflag = ICRNL|IXON|IUTF8,
-        .c_oflag = OPOST|ONLCR|NL0|CR0|TAB0|BS0|VT0|FF0,
-        .c_cflag = CS8|CREAD,
-        .c_lflag = ISIG|ICANON|IEXTEN|ECHO|ECHOE|ECHOK,
-        /* c_cc later */
-    };
+    struct termios termios;
+    memset(&termios, 0, sizeof(termios));
+    termios.c_iflag = ICRNL|IXON|IUTF8;
+    termios.c_oflag = OPOST|ONLCR|NL0|CR0|TAB0|BS0|VT0|FF0;
+    termios.c_cflag = CS8|CREAD;
+    termios.c_lflag = ISIG|ICANON|IEXTEN|ECHO|ECHOE|ECHOK;
 
     cfsetispeed(&termios, B38400);
     cfsetospeed(&termios, B38400);
@@ -346,7 +345,8 @@ status_t Terminal::run() {
             ALOGE("failed to open stderr - %s", strerror(errno));
         }
 
-        char *shell = "/system/bin/sh"; //getenv("SHELL");
+        // We know execvp(2) won't actually try to modify this.
+        char *shell = const_cast<char*>("/system/bin/sh");
 #if USE_TEST_SHELL
         char *args[4] = {shell, "-c", "x=1; c=0; while true; do echo -e \"stop \e[00;3${c}mechoing\e[00m yourself! ($x)\"; x=$(( $x + 1 )); c=$((($c+1)%7)); if [ $x -gt 110 ]; then sleep 0.5; fi; done", NULL};
 #else
@@ -681,7 +681,7 @@ static jboolean com_android_terminal_Terminal_nativeDispatchKey(JNIEnv *env, jcl
 }
 
 static JNINativeMethod gMethods[] = {
-    { "nativeInit", "(Lcom/android/terminal/TerminalCallbacks;II)L", (void*)com_android_terminal_Terminal_nativeInit },
+    { "nativeInit", "(Lcom/android/terminal/TerminalCallbacks;II)J", (void*)com_android_terminal_Terminal_nativeInit },
     { "nativeDestroy", "(J)I", (void*)com_android_terminal_Terminal_nativeDestroy },
     { "nativeRun", "(J)I", (void*)com_android_terminal_Terminal_nativeRun },
     { "nativeResize", "(JIII)I", (void*)com_android_terminal_Terminal_nativeResize },
