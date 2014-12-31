@@ -97,7 +97,7 @@ public class Terminal {
     };
 
     public Terminal() {
-        mNativePtr = nativeInit(mCallbacks, 25, 80);
+        mNativePtr = nativeInit(mCallbacks);
         key = sNumber++;
         mTitle = TAG + " " + key;
         mThread = new Thread(mTitle) {
@@ -162,7 +162,7 @@ public class Terminal {
         return nativeDispatchCharacter(mNativePtr, modifiers, character);
     }
 
-    private static native long nativeInit(TerminalCallbacks callbacks, int rows, int cols);
+    private static native long nativeInit(TerminalCallbacks callbacks);
     private static native int nativeDestroy(long ptr);
 
     private static native int nativeRun(long ptr);

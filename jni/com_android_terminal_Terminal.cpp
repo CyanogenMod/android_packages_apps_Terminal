@@ -109,7 +109,7 @@ private:
  */
 class Terminal {
 public:
-    Terminal(jobject callbacks, dimen_t rows, dimen_t cols);
+    Terminal(jobject callbacks);
     ~Terminal();
 
     status_t run();
@@ -266,8 +266,8 @@ static VTermScreenCallbacks cb = {
     .sb_popline = term_sb_popline,
 };
 
-Terminal::Terminal(jobject callbacks, dimen_t rows, dimen_t cols) :
-        mCallbacks(callbacks), mRows(rows), mCols(cols), mKilled(false),
+Terminal::Terminal(jobject callbacks) :
+        mCallbacks(callbacks), mRows(25), mCols(80), mKilled(false),
         mScrollCur(0), mScrollSize(100) {
     JNIEnv* env = AndroidRuntime::getJNIEnv();
     mCallbacks = env->NewGlobalRef(callbacks);
@@ -276,7 +276,7 @@ Terminal::Terminal(jobject callbacks, dimen_t rows, dimen_t cols) :
     memset(mScroll, 0, sizeof(ScrollbackLine*) * mScrollSize);
 
     /* Create VTerm */
-    mVt = vterm_new(rows, cols);
+    mVt = vterm_new(mRows, mCols);
     vterm_parser_set_utf8(mVt, 1);
 
     /* Set up screen */
@@ -550,9 +550,8 @@ jobject Terminal::getCallbacks() const {
  * JNI glue
  */
 
-static jlong com_android_terminal_Terminal_nativeInit(JNIEnv* env, jclass clazz, jobject callbacks,
-        jint rows, jint cols) {
-    return reinterpret_cast<jlong>(new Terminal(callbacks, rows, cols));
+static jlong com_android_terminal_Terminal_nativeInit(JNIEnv* env, jclass clazz, jobject callbacks) {
+    return reinterpret_cast<jlong>(new Terminal(callbacks));
 }
 
 static jint com_android_terminal_Terminal_nativeDestroy(JNIEnv* env, jclass clazz, jlong ptr) {
@@ -681,7 +680,7 @@ static jboolean com_android_terminal_Terminal_nativeDispatchKey(JNIEnv *env, jcl
 }
 
 static JNINativeMethod gMethods[] = {
-    { "nativeInit", "(Lcom/android/terminal/TerminalCallbacks;II)J", (void*)com_android_terminal_Terminal_nativeInit },
+    { "nativeInit", "(Lcom/android/terminal/TerminalCallbacks;)J", (void*)com_android_terminal_Terminal_nativeInit },
     { "nativeDestroy", "(J)I", (void*)com_android_terminal_Terminal_nativeDestroy },
     { "nativeRun", "(J)I", (void*)com_android_terminal_Terminal_nativeRun },
     { "nativeResize", "(JIII)I", (void*)com_android_terminal_Terminal_nativeResize },
