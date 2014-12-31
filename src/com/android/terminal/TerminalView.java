@@ -31,6 +31,8 @@ import android.view.ViewGroup;
 import android.view.inputmethod.BaseInputConnection;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.ListView;
 
@@ -108,6 +110,16 @@ public class TerminalView extends ListView {
         }
     }
 
+    private final AdapterView.OnItemClickListener mClickListener = new AdapterView.OnItemClickListener() {
+        @Override
+        public void onItemClick(AdapterView<?> parent, View v, int pos, long id) {
+            if (parent.requestFocus()) {
+                InputMethodManager imm = (InputMethodManager) parent.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+                imm.showSoftInput(parent, InputMethodManager.SHOW_IMPLICIT);
+            }
+        }
+    };
+
     private final Runnable mDamageRunnable = new Runnable() {
         @Override
         public void run() {
@@ -137,6 +149,8 @@ public class TerminalView extends ListView {
 
         setAdapter(mAdapter);
         setOnKeyListener(mKeyListener);
+
+        setOnItemClickListener(mClickListener);
     }
 
     private final BaseAdapter mAdapter = new BaseAdapter() {
