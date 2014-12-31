@@ -61,7 +61,8 @@ public class TerminalLineView extends View {
 
         final TerminalMetrics m = mMetrics;
 
-        for (int col = 0; col < cols;) {
+        int col;
+        for (col = 0; col < cols;) {
             mTerm.getCellRun(row, col, m.run);
 
             m.bgPaint.setColor(m.run.bg);
@@ -81,5 +82,14 @@ public class TerminalLineView extends View {
 
             col += m.run.colSize;
         }
+
+        if (mTerm.getCursorVisible() && mTerm.getCursorRow() == row) {
+            col = mTerm.getCursorCol();
+            canvas.save();
+            canvas.translate(col * m.charWidth, 0);
+            canvas.drawRect(0, 0, m.charWidth, m.charHeight, m.cursorPaint);
+            canvas.restore();
+        }
+
     }
 }
