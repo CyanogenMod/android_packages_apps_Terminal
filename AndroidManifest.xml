@@ -17,6 +17,7 @@
         package="com.android.terminal">
 
     <application
+    	android:icon="@drawable/terminal"
         android:label="@string/app_label"
         android:enabled="false">
 
