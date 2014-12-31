@@ -121,6 +121,7 @@ public:
     bool flushInput();
 
     status_t resize(dimen_t rows, dimen_t cols, dimen_t scrollRows);
+    status_t setColors(int fg, int bg);
 
     status_t onPushline(dimen_t cols, const VTermScreenCell* cells);
     status_t onPopline(dimen_t cols, VTermScreenCell* cells);
@@ -433,6 +434,24 @@ status_t Terminal::resize(dimen_t rows, dimen_t cols, dimen_t scrollRows) {
     return 0;
 }
 
+status_t Terminal::setColors(int fg, int bg) {
+    Mutex::Autolock lock(mLock);
+
+    ALOGD("setColors(%d, %d)", fg, bg);
+
+    VTermState* state = vterm_obtain_state(mVt);
+    VTermColor fg_color = { (uint8_t)((fg>>16)&0xff),
+                            (uint8_t)((fg>>8)&0xff),
+                            (uint8_t)(fg&0xff) };
+    VTermColor bg_color = { (uint8_t)((bg>>16)&0xff),
+                            (uint8_t)((bg>>8)&0xff),
+                            (uint8_t)(bg&0xff) };
+    vterm_state_set_default_colors(state, &fg_color, &bg_color);
+    vterm_state_reset(state, 0);
+
+    return 0;
+}
+
 status_t Terminal::onPushline(dimen_t cols, const VTermScreenCell* cells) {
     ScrollbackLine* line = NULL;
     if (mScrollCur == mScrollSize) {
@@ -571,6 +590,12 @@ static jint com_android_terminal_Terminal_nativeResize(JNIEnv* env,
     return term->resize(rows, cols, scrollRows);
 }
 
+static jint com_android_terminal_Terminal_nativeSetColors(JNIEnv* env,
+        jclass clazz, jlong ptr, jint fg, jint bg) {
+    Terminal* term = reinterpret_cast<Terminal*>(ptr);
+    return term->setColors(fg, bg);
+}
+
 static inline int toArgb(const VTermColor& color) {
     return (0xff << 24 | color.red << 16 | color.green << 8 | color.blue);
 }
@@ -684,6 +709,7 @@ static JNINativeMethod gMethods[] = {
     { "nativeDestroy", "(J)I", (void*)com_android_terminal_Terminal_nativeDestroy },
     { "nativeRun", "(J)I", (void*)com_android_terminal_Terminal_nativeRun },
     { "nativeResize", "(JIII)I", (void*)com_android_terminal_Terminal_nativeResize },
+    { "nativeSetColors", "(JII)I", (void*)com_android_terminal_Terminal_nativeSetColors },
     { "nativeGetCellRun", "(JIILcom/android/terminal/Terminal$CellRun;)I", (void*)com_android_terminal_Terminal_nativeGetCellRun },
     { "nativeGetRows", "(J)I", (void*)com_android_terminal_Terminal_nativeGetRows },
     { "nativeGetCols", "(J)I", (void*)com_android_terminal_Terminal_nativeGetCols },

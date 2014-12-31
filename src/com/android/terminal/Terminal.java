@@ -147,6 +147,12 @@ public class Terminal {
         }
     }
 
+    public void setColors(int fg, int bg) {
+        if (nativeSetColors(mNativePtr, fg, bg) != 0) {
+            throw new IllegalStateException("setColors failed");
+        }
+    }
+
     public int getRows() {
         return nativeGetRows(mNativePtr);
     }
@@ -195,6 +201,7 @@ public class Terminal {
 
     private static native int nativeRun(long ptr);
     private static native int nativeResize(long ptr, int rows, int cols, int scrollRows);
+    private static native int nativeSetColors(long ptr, int fg, int bg);
     private static native int nativeGetCellRun(long ptr, int row, int col, CellRun run);
     private static native int nativeGetRows(long ptr);
     private static native int nativeGetCols(long ptr);

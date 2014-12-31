@@ -23,9 +23,12 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
+import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.Parcelable;
+import android.preference.PreferenceManager;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.PagerTitleStrip;
 import android.support.v4.view.ViewPager;
@@ -142,6 +145,53 @@ public class TerminalActivity extends Activity {
         }
     };
 
+    private final View.OnSystemUiVisibilityChangeListener mUiVisibilityChangeListener = new View.OnSystemUiVisibilityChangeListener() {
+        @Override
+        public void onSystemUiVisibilityChange(int visibility) {
+            if ((visibility & View.SYSTEM_UI_FLAG_FULLSCREEN) != 0) {
+                getActionBar().hide();
+            }
+            else {
+                getActionBar().show();
+            }
+        }
+    };
+
+    public void updatePreferences() {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        boolean bval;
+        bval = sp.getBoolean(TerminalSettingsActivity.KEY_FULLSCREEN_MODE, false);
+        if (bval) {
+            getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN);
+            getActionBar().hide();
+        }
+        else {
+            getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+            getActionBar().show();
+        }
+
+        String sval;
+        sval = sp.getString(TerminalSettingsActivity.KEY_SCREEN_ORIENTATION, "automatic");
+        if (sval.equals("automatic")) {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR);
+        }
+        if (sval.equals("portrait")) {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        }
+        if (sval.equals("landscape")) {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        }
+
+        for (int i = 0; i < mPager.getChildCount(); ++i) {
+            View v = mPager.getChildAt(i);
+            if (v instanceof TerminalView) {
+                TerminalView view = (TerminalView) v;
+                view.updatePreferences();
+                view.invalidateViews();
+            }
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -152,13 +202,23 @@ public class TerminalActivity extends Activity {
         mTitles = (PagerTitleStrip) findViewById(R.id.titles);
 
         mPager.setAdapter(mTermAdapter);
+
+        View decorView = getWindow().getDecorView();
+        decorView.setOnSystemUiVisibilityChangeListener(mUiVisibilityChangeListener);
     }
 
     @Override
     protected void onStart() {
         super.onStart();
+        updatePreferences();
         bindService(
                 new Intent(this, TerminalService.class), mServiceConn, Context.BIND_AUTO_CREATE);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        updatePreferences();
     }
 
     @Override
@@ -197,6 +257,10 @@ public class TerminalActivity extends Activity {
                 mService.destroyTerminal(key);
                 mTermAdapter.notifyDataSetChanged();
                 invalidateOptionsMenu();
+                return true;
+            }
+            case R.id.menu_item_settings: {
+                startActivity(new Intent(TerminalActivity.this, TerminalSettingsActivity.class));
                 return true;
             }
         }

@@ -19,11 +19,15 @@ package com.android.terminal;
 import static com.android.terminal.Terminal.TAG;
 
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Paint.FontMetrics;
 import android.graphics.Typeface;
 import android.os.Parcelable;
+import android.preference.PreferenceManager;
 import android.util.AttributeSet;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
@@ -86,12 +90,11 @@ public class TerminalView extends ListView {
             // Positions of each possible cell
             // TODO: make sure this works with surrogate pairs
             pos = new float[MAX_RUN_LENGTH * 2];
-            setTextSize(20);
+            textPaint.setTypeface(Typeface.MONOSPACE);
+            textPaint.setAntiAlias(true);
         }
 
         public void setTextSize(float textSize) {
-            textPaint.setTypeface(Typeface.MONOSPACE);
-            textPaint.setAntiAlias(true);
             textPaint.setTextSize(textSize);
 
             // Read metrics to get exact pixel dimensions
@@ -111,9 +114,25 @@ public class TerminalView extends ListView {
         }
     }
 
+    private void toggleFullscreenMode() {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getContext());
+        boolean oldVal = sp.getBoolean(TerminalSettingsActivity.KEY_FULLSCREEN_MODE, false);
+        SharedPreferences.Editor editor = sp.edit();
+        editor.putBoolean(TerminalSettingsActivity.KEY_FULLSCREEN_MODE, !oldVal);
+        editor.commit();
+        TerminalActivity activity = (TerminalActivity) getContext();
+        activity.updatePreferences();
+    }
+
     private final AdapterView.OnItemClickListener mClickListener = new AdapterView.OnItemClickListener() {
         @Override
         public void onItemClick(AdapterView<?> parent, View v, int pos, long id) {
+            // Clicking on top half of view toggles fullscreen mode
+            if (pos - mScrollRows < mRows / 2) {
+                toggleFullscreenMode();
+                return;
+            }
+            // Clicking on bottom half of view shows soft keyboard
             if (parent.requestFocus()) {
                 InputMethodManager imm = (InputMethodManager) parent.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
                 imm.showSoftInput(parent, InputMethodManager.SHOW_IMPLICIT);
@@ -130,6 +149,11 @@ public class TerminalView extends ListView {
             }
         }
     };
+
+    private final float PT_PER_INCH = 72.0f;
+    private float ptToDp(float pt) {
+        return (pt / PT_PER_INCH) * (float)DisplayMetrics.DENSITY_DEFAULT;
+    }
 
     public TerminalView(Context context) {
         this(context, null);
@@ -283,7 +307,7 @@ public class TerminalView extends ListView {
             term.setClient(mClient);
             mTermKeys.setTerminal(term);
 
-            mMetrics.cursorPaint.setColor(0xf0f0f0);
+            updatePreferences();
 
             // Populate any current settings
             mRows = mTerm.getRows();
@@ -335,5 +359,29 @@ public class TerminalView extends ListView {
                 return true;
             }
         };
+    }
+
+    public void updatePreferences() {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getContext());
+        String val;
+
+        val = sp.getString(TerminalSettingsActivity.KEY_FONT_SIZE, "12");
+        mMetrics.setTextSize(ptToDp(Float.parseFloat(val)));
+
+        val = sp.getString(TerminalSettingsActivity.KEY_TEXT_COLORS, "black/white");
+        int fg = 0x000000;
+        int bg = 0xffffff;
+        int idx = val.indexOf('/');
+        if (idx != -1) {
+            try {
+                fg = Color.parseColor(val.substring(0, idx));
+                bg = Color.parseColor(val.substring(idx+1));
+            }
+            catch (IllegalArgumentException e) {
+                // Ignore
+            }
+        }
+        mTerm.setColors(fg, bg);
+        mMetrics.cursorPaint.setColor(fg);
     }
 }
