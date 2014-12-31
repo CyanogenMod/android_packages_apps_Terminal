@@ -68,6 +68,7 @@ public class TerminalView extends ListView {
 
         final Paint bgPaint = new Paint();
         final Paint textPaint = new Paint();
+        final Paint cursorPaint = new Paint();
 
         /** Run of cells used when drawing */
         final CellRun run;
@@ -202,6 +203,11 @@ public class TerminalView extends ListView {
         }
 
         @Override
+        public void onMoveCursor(int posRow, int posCol, int oldPosRow, int oldPosCol, int visible) {
+            post(mDamageRunnable);
+        }
+
+        @Override
         public void onBell() {
             Log.i(TAG, "DING!");
         }
@@ -276,6 +282,8 @@ public class TerminalView extends ListView {
         if (term != null) {
             term.setClient(mClient);
             mTermKeys.setTerminal(term);
+
+            mMetrics.cursorPaint.setColor(0xfff0f0f0);
 
             // Populate any current settings
             mRows = mTerm.getRows();

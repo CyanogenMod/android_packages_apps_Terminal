@@ -58,6 +58,7 @@ public class Terminal {
         public void onDamage(int startRow, int endRow, int startCol, int endCol);
         public void onMoveRect(int destStartRow, int destEndRow, int destStartCol, int destEndCol,
                 int srcStartRow, int srcEndRow, int srcStartCol, int srcEndCol);
+        public void onMoveCursor(int posRow, int posCol, int oldPosRow, int oldPosCol, int visible);
         public void onBell();
     }
 
@@ -67,6 +68,10 @@ public class Terminal {
     private String mTitle;
 
     private TerminalClient mClient;
+
+    private boolean mCursorVisible;
+    private int mCursorRow;
+    private int mCursorCol;
 
     private final TerminalCallbacks mCallbacks = new TerminalCallbacks() {
         @Override
@@ -83,6 +88,17 @@ public class Terminal {
             if (mClient != null) {
                 mClient.onMoveRect(destStartRow, destEndRow, destStartCol, destEndCol, srcStartRow,
                         srcEndRow, srcStartCol, srcEndCol);
+            }
+            return 1;
+        }
+
+        @Override
+        public int moveCursor(int posRow, int posCol, int oldPosRow, int oldPosCol, int visible) {
+            mCursorVisible = (visible != 0);
+            mCursorRow = posRow;
+            mCursorCol = posCol;
+            if (mClient != null) {
+                mClient.onMoveCursor(posRow, posCol, oldPosRow, oldPosCol, visible);
             }
             return 1;
         }
@@ -147,6 +163,18 @@ public class Terminal {
         if (nativeGetCellRun(mNativePtr, row, col, run) != 0) {
             throw new IllegalStateException("getCell failed");
         }
+    }
+
+    public boolean getCursorVisible() {
+        return mCursorVisible;
+    }
+
+    public int getCursorRow() {
+        return mCursorRow;
+    }
+
+    public int getCursorCol() {
+        return mCursorCol;
     }
 
     public String getTitle() {
