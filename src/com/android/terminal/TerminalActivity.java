@@ -18,6 +18,7 @@ package com.android.terminal;
 
 import static com.android.terminal.Terminal.TAG;
 
+import android.animation.LayoutTransition;
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
@@ -38,6 +39,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toolbar;
 
 /**
  * Activity that displays all {@link Terminal} instances running in a bound
@@ -198,6 +200,9 @@ public class TerminalActivity extends Activity {
 
         setContentView(R.layout.activity);
 
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setActionBar(toolbar);
+
         mPager = (ViewPager) findViewById(R.id.pager);
         mTitles = (PagerTitleStrip) findViewById(R.id.titles);
 
@@ -205,6 +210,9 @@ public class TerminalActivity extends Activity {
 
         View decorView = getWindow().getDecorView();
         decorView.setOnSystemUiVisibilityChangeListener(mUiVisibilityChangeListener);
+
+        ViewGroup root = (ViewGroup) findViewById(R.id.root);
+        root.getLayoutTransition().enableTransitionType(LayoutTransition.CHANGING);
     }
 
     @Override
