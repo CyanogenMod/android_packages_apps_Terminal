@@ -369,8 +369,8 @@ public class TerminalView extends ListView {
         mMetrics.setTextSize(ptToDp(Float.parseFloat(val)));
 
         val = sp.getString(TerminalSettingsActivity.KEY_TEXT_COLORS, "black/white");
-        int fg = 0x000000;
-        int bg = 0xffffff;
+        int fg = 0xfafafa;
+        int bg = 0x212121;
         int idx = val.indexOf('/');
         if (idx != -1) {
             try {
