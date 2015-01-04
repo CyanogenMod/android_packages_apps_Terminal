@@ -447,7 +447,7 @@ status_t Terminal::setColors(int fg, int bg) {
                             (uint8_t)((bg>>8)&0xff),
                             (uint8_t)(bg&0xff) };
     vterm_state_set_default_colors(state, &fg_color, &bg_color);
-    vterm_state_reset(state, 0);
+    vterm_state_reset(state, 1);
 
     return 0;
 }
