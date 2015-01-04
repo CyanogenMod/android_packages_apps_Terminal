@@ -75,6 +75,10 @@ public class TerminalActivity extends Activity {
         }
     };
 
+    protected boolean needsElevatedActionBar() {
+      return false;
+    }
+
     private final PagerAdapter mTermAdapter = new PagerAdapter() {
         private SparseArray<SparseArray<Parcelable>>
                 mSavedState = new SparseArray<SparseArray<Parcelable>>();

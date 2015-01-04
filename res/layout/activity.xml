@@ -23,7 +23,38 @@
     <android.support.v4.view.PagerTitleStrip
         android:id="@+id/titles"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="top" />
+        android:layout_gravity="top"
+        android:layout_height="@dimen/vheight"
+        android:background="@color/primary"
+        android:elevation="@dimen/action_bar_elevation" >
+
+    <RelativeLayout
+      android:id="@+id/menu_new_tab"
+      android:layout_width="fill_parent"
+      android:layout_height="fill_parent"
+      android:layout_marginEnd="@dimen/floating_action_button_margin_right"
+      android:layout_marginBottom="@dimen/floating_action_button_margin_bottom"
+      android:layout_alignParentEnd="true"
+      android:layout_alignParentRight="true"
+      android:layout_alignParentBottom="true"
+      android:background="@drawable/fab_accent"
+      android:elevation="@dimen/floating_action_button_translation_z"
+      android:clickable="true"
+      android:visibility="gone">
+      <ImageButton
+          android:id="@+id/floating_action_button_new"
+          android:layout_width="@dimen/floating_action_button_width"
+          android:layout_height="@dimen/floating_action_button_height"
+          android:background="@drawable/floating_action_button"
+          android:tint="@color/floating_action_button_icon_color"
+          android:src="@drawable/ic_menu_add"
+          android:clickable="false"
+          android:layout_alignParentRight="true"
+          android:layout_alignParentBottom="true"
+          android:duplicateParentState="true"/>
+    </RelativeLayout>
+
+    </android.support.v4.view.PagerTitleStrip>
+
 
 </android.support.v4.view.ViewPager>

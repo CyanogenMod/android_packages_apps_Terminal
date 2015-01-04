@@ -49,13 +49,15 @@
         <item>Green text on black</item>
         <item>Amber text on black</item>
         <item>Red text on black</item>
+        <item>Blue text on black</item>
     </string-array>
     <string-array name="text_colors_values" translatable="false">
-        <item>#000000/#ffffff</item>
-        <item>#f0f0f0/#000000</item>
-        <item>#00f000/#000000</item>
-        <item>#f0c000/#000000</item>
-        <item>#f00000/#000000</item>
+        <item>#212121/#fafafa</item>
+        <item>#fafafa/#212121</item>
+        <item>#4CAF50/#212121</item>
+        <item>#FF9800/#212121</item>
+        <item>#F44336/#212121</item>
+        <item>#3F51B5/#212121</item>
     </string-array>
 
 </resources>
