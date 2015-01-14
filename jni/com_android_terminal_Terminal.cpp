@@ -126,7 +126,7 @@ public:
     status_t onPushline(dimen_t cols, const VTermScreenCell* cells);
     status_t onPopline(dimen_t cols, VTermScreenCell* cells);
 
-    void getCellLocked(VTermPos pos, VTermScreenCell* cell);
+    bool getCellLocked(VTermPos pos, VTermScreenCell* cell);
 
     dimen_t getRows() const;
     dimen_t getCols() const;
@@ -437,7 +437,7 @@ status_t Terminal::resize(dimen_t rows, dimen_t cols, dimen_t scrollRows) {
 status_t Terminal::setColors(int fg, int bg) {
     Mutex::Autolock lock(mLock);
 
-    ALOGD("setColors(%d, %d)", fg, bg);
+    ALOGD("setColors(0x%x, 0x%x)", fg, bg);
 
     VTermState* state = vterm_obtain_state(mVt);
     VTermColor fg_color = { (uint8_t)((fg>>16)&0xff),
@@ -500,7 +500,7 @@ status_t Terminal::onPopline(dimen_t cols, VTermScreenCell* cells) {
     return 1;
 }
 
-void Terminal::getCellLocked(VTermPos pos, VTermScreenCell* cell) {
+bool Terminal::getCellLocked(VTermPos pos, VTermScreenCell* cell) {
     // The UI may be asking for cell data while the model is changing
     // underneath it, so we always fill with meaningful data.
 
@@ -512,7 +512,7 @@ void Terminal::getCellLocked(VTermPos pos, VTermScreenCell* cell) {
 #if DEBUG_SCROLLBACK
             cell->bg.red = 255;
 #endif
-            return;
+            return false;
         }
 
         ScrollbackLine* line = mScroll[scrollRow - 1];
@@ -523,7 +523,7 @@ void Terminal::getCellLocked(VTermPos pos, VTermScreenCell* cell) {
 #if DEBUG_SCROLLBACK
             cell->bg.blue = 255;
 #endif
-            return;
+            return true;
         } else {
             // Extend last scrollback cell into invalid region
             line->getCell(line->cols - 1, cell);
@@ -532,7 +532,7 @@ void Terminal::getCellLocked(VTermPos pos, VTermScreenCell* cell) {
 #if DEBUG_SCROLLBACK
             cell->bg.green = 255;
 #endif
-            return;
+            return true;
         }
     }
 
@@ -542,11 +542,12 @@ void Terminal::getCellLocked(VTermPos pos, VTermScreenCell* cell) {
 #if DEBUG_SCROLLBACK
         cell->bg.red = 128;
 #endif
-        return;
+        return false;
     }
 
     // Valid screen cell
     vterm_screen_get_cell(mVts, pos, cell);
+    return true;
 }
 
 dimen_t Terminal::getRows() const {
@@ -637,11 +638,13 @@ static jint com_android_terminal_Terminal_nativeGetCellRun(JNIEnv* env,
     size_t colSize = 0;
     while ((size_t) pos.col < term->getCols()) {
         memset(&cell, 0, sizeof(VTermScreenCell));
-        term->getCellLocked(pos, &cell);
+        bool valid = term->getCellLocked(pos, &cell);
 
         if (colSize == 0) {
-            env->SetIntField(run, cellRunFgField, toArgb(cell.fg));
-            env->SetIntField(run, cellRunBgField, toArgb(cell.bg));
+            if (valid) {
+                env->SetIntField(run, cellRunFgField, toArgb(cell.fg));
+                env->SetIntField(run, cellRunBgField, toArgb(cell.bg));
+            }
             memcpy(&firstCell, &cell, sizeof(VTermScreenCell));
         } else {
             if (!isCellStyleEqual(cell, firstCell)) {

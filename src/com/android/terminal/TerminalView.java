@@ -382,6 +382,8 @@ public class TerminalView extends ListView {
             }
         }
         mTerm.setColors(fg, bg);
+        mMetrics.run.fg = fg;
+        mMetrics.run.bg = bg;
         mMetrics.cursorPaint.setColor(fg);
     }
 }
