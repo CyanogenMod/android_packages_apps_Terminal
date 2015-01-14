@@ -30,8 +30,7 @@ import static com.android.terminal.Terminal.TAG;
 /**
  * Settings for Terminal.
  */
-public class TerminalSettingsActivity extends PreferenceActivity
-        implements Preference.OnPreferenceChangeListener {
+public class TerminalSettingsActivity extends PreferenceActivity {
 
     public static final String KEY_FULLSCREEN_MODE = "fullscreen_mode";
     public static final String KEY_SCREEN_ORIENTATION = "screen_orientation";
@@ -50,18 +49,10 @@ public class TerminalSettingsActivity extends PreferenceActivity
 
         mFullscreenModePref = (CheckBoxPreference) findPreference(KEY_FULLSCREEN_MODE);
         mScreenOrientationPref = (ListPreference) findPreference(KEY_SCREEN_ORIENTATION);
-        mScreenOrientationPref.setOnPreferenceChangeListener(this);
         mFontSizePref = (ListPreference) findPreference(KEY_FONT_SIZE);
-        mFontSizePref.setOnPreferenceChangeListener(this);
         mTextColorsPref = (ListPreference) findPreference(KEY_TEXT_COLORS);
-        mTextColorsPref.setOnPreferenceChangeListener(this);
 
         getActionBar().setDisplayHomeAsUpEnabled(true);
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
     }
 
     @Override
@@ -72,34 +63,5 @@ public class TerminalSettingsActivity extends PreferenceActivity
                 return true;
         }
         return super.onOptionsItemSelected(item);
-    }
-
-    @Override
-    public boolean onPreferenceTreeClick(PreferenceScreen preferenceScreen,
-            Preference preference) {
-        if (KEY_FULLSCREEN_MODE.equals(preference.getKey())) {
-            CheckBoxPreference pref = (CheckBoxPreference) preference;
-        }
-        return super.onPreferenceTreeClick(preferenceScreen, preference);
-    }
-
-    @Override
-    public boolean onPreferenceChange(Preference preference, Object newValue) {
-        if (KEY_SCREEN_ORIENTATION.equals(preference.getKey())) {
-            ListPreference pref = (ListPreference) preference;
-            String val = (String) newValue;
-            int idx = pref.findIndexOfValue(val);
-        }
-        if (KEY_FONT_SIZE.equals(preference.getKey())) {
-            ListPreference pref = (ListPreference) preference;
-            String val = (String) newValue;
-            int idx = pref.findIndexOfValue(val);
-        }
-        if (KEY_TEXT_COLORS.equals(preference.getKey())) {
-            ListPreference pref = (ListPreference) preference;
-            String val = (String) newValue;
-            int idx = pref.findIndexOfValue(val);
-        }
-        return true;
     }
 }

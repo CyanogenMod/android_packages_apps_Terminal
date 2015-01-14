@@ -124,7 +124,8 @@ public class TerminalView extends ListView {
         activity.updatePreferences();
     }
 
-    private final AdapterView.OnItemClickListener mClickListener = new AdapterView.OnItemClickListener() {
+    private final AdapterView.OnItemClickListener mClickListener =
+            new AdapterView.OnItemClickListener() {
         @Override
         public void onItemClick(AdapterView<?> parent, View v, int pos, long id) {
             // Clicking on top half of view toggles fullscreen mode
@@ -134,7 +135,8 @@ public class TerminalView extends ListView {
             }
             // Clicking on bottom half of view shows soft keyboard
             if (parent.requestFocus()) {
-                InputMethodManager imm = (InputMethodManager) parent.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+                InputMethodManager imm = (InputMethodManager)
+                        parent.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
                 imm.showSoftInput(parent, InputMethodManager.SHOW_IMPLICIT);
             }
         }
@@ -227,7 +229,8 @@ public class TerminalView extends ListView {
         }
 
         @Override
-        public void onMoveCursor(int posRow, int posCol, int oldPosRow, int oldPosCol, int visible) {
+        public void onMoveCursor(int posRow, int posCol, int oldPosRow,
+                int oldPosCol, int visible) {
             post(mDamageRunnable);
         }
 
@@ -375,7 +378,7 @@ public class TerminalView extends ListView {
         if (idx != -1) {
             try {
                 fg = Color.parseColor(val.substring(0, idx));
-                bg = Color.parseColor(val.substring(idx+1));
+                bg = Color.parseColor(val.substring(idx + 1));
             }
             catch (IllegalArgumentException e) {
                 // Ignore
