@@ -125,6 +125,7 @@ public:
 
     status_t onPushline(dimen_t cols, const VTermScreenCell* cells);
     status_t onPopline(dimen_t cols, VTermScreenCell* cells);
+    int onCursorChange(const VTermPos& oldPos, const VTermPos& newPos, bool visible);
 
     bool getCellLocked(VTermPos pos, VTermScreenCell* cell);
 
@@ -148,6 +149,7 @@ private:
     dimen_t mRows;
     dimen_t mCols;
     bool mKilled;
+    bool mCursorVisible;
 
     ScrollbackLine **mScroll;
     dimen_t mScrollCur;
@@ -188,9 +190,7 @@ static int term_movecursor(VTermPos pos, VTermPos oldpos, int visible, void *use
     ALOGW("term_movecursor");
 #endif
 
-    JNIEnv* env = AndroidRuntime::getJNIEnv();
-    return env->CallIntMethod(term->getCallbacks(), moveCursorMethod, pos.row,
-            pos.col, oldpos.row, oldpos.col, visible);
+    return term->onCursorChange(oldpos, pos, visible != 0);
 }
 
 static int term_settermprop(VTermProp prop, VTermValue *val, void *user) {
@@ -267,9 +267,13 @@ static VTermScreenCallbacks cb = {
     .sb_popline = term_sb_popline,
 };
 
+static inline int toArgb(const VTermColor& color) {
+    return (0xff << 24 | color.red << 16 | color.green << 8 | color.blue);
+}
+
 Terminal::Terminal(jobject callbacks) :
         mCallbacks(callbacks), mRows(25), mCols(80), mKilled(false),
-        mScrollCur(0), mScrollSize(100) {
+        mCursorVisible(true), mScrollCur(0), mScrollSize(100) {
     JNIEnv* env = AndroidRuntime::getJNIEnv();
     mCallbacks = env->NewGlobalRef(callbacks);
 
@@ -440,6 +444,10 @@ status_t Terminal::setColors(int fg, int bg) {
     ALOGD("setColors(0x%x, 0x%x)", fg, bg);
 
     VTermState* state = vterm_obtain_state(mVt);
+    VTermColor oldFgColor, oldBgColor;
+    vterm_state_get_default_colors(state, &oldFgColor, &oldBgColor);
+
+    int changed = fg != toArgb(oldFgColor) || bg != toArgb(oldBgColor);
     VTermColor fg_color = { (uint8_t)((fg>>16)&0xff),
                             (uint8_t)((fg>>8)&0xff),
                             (uint8_t)(fg&0xff) };
@@ -447,9 +455,25 @@ status_t Terminal::setColors(int fg, int bg) {
                             (uint8_t)((bg>>8)&0xff),
                             (uint8_t)(bg&0xff) };
     vterm_state_set_default_colors(state, &fg_color, &bg_color);
-    vterm_state_reset(state, 0);
+
+    VTermPos oldPos, newPos;
+    vterm_state_get_cursorpos(state, &oldPos);
+    vterm_state_reset(state, changed);
+    vterm_state_get_cursorpos(state, &newPos);
+
+    if (oldPos.row != newPos.row || oldPos.col != newPos.col) {
+        onCursorChange(oldPos, newPos, mCursorVisible);
+    }
 
     return 0;
+}
+
+int Terminal::onCursorChange(const VTermPos& oldPos, const VTermPos& newPos, bool visible) {
+    mCursorVisible = visible;
+
+    JNIEnv* env = AndroidRuntime::getJNIEnv();
+    return env->CallIntMethod(getCallbacks(), moveCursorMethod, newPos.row,
+            newPos.col, oldPos.row, oldPos.col, visible);
 }
 
 status_t Terminal::onPushline(dimen_t cols, const VTermScreenCell* cells) {
@@ -595,10 +619,6 @@ static jint com_android_terminal_Terminal_nativeSetColors(JNIEnv* env,
         jclass clazz, jlong ptr, jint fg, jint bg) {
     Terminal* term = reinterpret_cast<Terminal*>(ptr);
     return term->setColors(fg, bg);
-}
-
-static inline int toArgb(const VTermColor& color) {
-    return (0xff << 24 | color.red << 16 | color.green << 8 | color.blue);
 }
 
 static inline bool isCellStyleEqual(const VTermScreenCell& a, const VTermScreenCell& b) {
