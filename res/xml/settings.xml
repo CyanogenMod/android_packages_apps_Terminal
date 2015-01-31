@@ -17,17 +17,16 @@
 
 <PreferenceScreen
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:title="@string/settings">
+    android:title="@string/menu_item_settings">
     <PreferenceCategory
         android:title="@string/screen_settings">
         <CheckBoxPreference
             android:key="fullscreen_mode"
-            android:title="@string/fullscreen_mode"
-            android:summary="@string/fullscreen_mode_summary"
+            android:title="@string/fullscreen_mode_title"
             android:defaultValue="false" />
         <ListPreference
             android:key="screen_orientation"
-            android:title="@string/screen_orientation"
+            android:title="@string/screen_orientation_title"
             android:dialogTitle="@string/screen_orientation_title"
             android:entries="@array/screen_orientation_labels"
             android:entryValues="@array/screen_orientation_values" />
@@ -36,14 +35,14 @@
         android:title="@string/text_settings">
         <ListPreference
             android:key="font_size"
-            android:title="@string/font_size"
+            android:title="@string/font_size_title"
             android:dialogTitle="@string/font_size_title"
             android:entries="@array/font_size_labels"
             android:entryValues="@array/font_size_values"
             android:defaultValue="12" />
         <ListPreference
             android:key="text_colors"
-            android:title="@string/text_colors"
+            android:title="@string/text_colors_title"
             android:dialogTitle="@string/text_colors_title"
             android:entries="@array/text_colors_labels"
             android:entryValues="@array/text_colors_values"
