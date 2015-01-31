@@ -17,11 +17,11 @@
 package com.android.terminal;
 
 import android.os.Bundle;
-import android.preference.CheckBoxPreference;
 import android.preference.ListPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceScreen;
+import android.preference.SwitchPreference;
 import android.util.Log;
 import android.view.MenuItem;
 
@@ -37,7 +37,7 @@ public class TerminalSettingsActivity extends PreferenceActivity {
     public static final String KEY_FONT_SIZE = "font_size";
     public static final String KEY_TEXT_COLORS = "text_colors";
 
-    private CheckBoxPreference mFullscreenModePref;
+    private SwitchPreference mFullscreenModePref;
     private ListPreference mScreenOrientationPref;
     private ListPreference mFontSizePref;
     private ListPreference mTextColorsPref;
@@ -47,7 +47,7 @@ public class TerminalSettingsActivity extends PreferenceActivity {
         super.onCreate(savedInstanceState);
         addPreferencesFromResource(R.xml.settings);
 
-        mFullscreenModePref = (CheckBoxPreference) findPreference(KEY_FULLSCREEN_MODE);
+        mFullscreenModePref = (SwitchPreference) findPreference(KEY_FULLSCREEN_MODE);
         mScreenOrientationPref = (ListPreference) findPreference(KEY_SCREEN_ORIENTATION);
         mFontSizePref = (ListPreference) findPreference(KEY_FONT_SIZE);
         mTextColorsPref = (ListPreference) findPreference(KEY_TEXT_COLORS);

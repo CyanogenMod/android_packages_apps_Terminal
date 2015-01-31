@@ -20,7 +20,7 @@
     android:title="@string/menu_item_settings">
     <PreferenceCategory
         android:title="@string/screen_settings">
-        <CheckBoxPreference
+        <SwitchPreference
             android:key="fullscreen_mode"
             android:title="@string/fullscreen_mode_title"
             android:defaultValue="false" />
