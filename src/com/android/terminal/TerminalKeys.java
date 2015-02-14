@@ -23,7 +23,7 @@ import android.view.View;
 
 public class TerminalKeys {
     private static final String TAG = "TerminalKeys";
-    private static final boolean DEBUG = true;
+    private static final boolean DEBUG = false;
     // Taken from vterm_input.h
     // TODO: Consider setting these via jni
     public static final int VTERM_KEY_NONE      = 0;
