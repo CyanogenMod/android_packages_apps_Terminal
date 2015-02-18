@@ -17,24 +17,24 @@
 -->
 <resources>
   <string-array name="screen_orientation_labels">
-    <item>Automaticky</item>
-    <item>Na šířku</item>
-    <item>Na výšku</item>
+    <item>Automática</item>
+    <item>Paisaxe</item>
+    <item>Retratu</item>
   </string-array>
   <string-array name="font_size_labels">
-    <item>10 bodů</item>
-    <item>12 bodů</item>
-    <item>14 bodů</item>
-    <item>16 bodů</item>
-    <item>20 bodů</item>
-    <item>24 bodů</item>
+    <item>10 pt</item>
+    <item>12 pt</item>
+    <item>14 pt</item>
+    <item>16 pt</item>
+    <item>20 pt</item>
+    <item>24 pt</item>
   </string-array>
   <string-array name="text_colors_labels">
-    <item>Černý text na bílém pozadí</item>
-    <item>Bílý text na černém pozadí</item>
-    <item>Zelený text na černém pozadí</item>
-    <item>Jantarový text na černém pozadí</item>
-    <item>Červený text na černém pozadí</item>
-    <item>Modrý text na černém pozadí</item>
+    <item>Testu prietu sobre fondu blancu</item>
+    <item>Testu blancu sobre fondu prietu</item>
+    <item>Testu verde sobre fondu prietu</item>
+    <item>Testu naranxa sobre fondu prietu</item>
+    <item>Testu bermeyu sobre fondu prietu</item>
+    <item>Testu azul sobre fondu prietu</item>
   </string-array>
 </resources>

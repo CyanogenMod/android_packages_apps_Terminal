@@ -16,5 +16,6 @@
 -->
 <resources>
   <string name="menu_item_settings">Inställningar</string>
+  <string name="screen_settings">Skärminställningar</string>
   <string name="font_size_title">Teckenstorlek</string>
 </resources>

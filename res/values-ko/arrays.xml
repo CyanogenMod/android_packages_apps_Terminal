@@ -17,24 +17,24 @@
 -->
 <resources>
   <string-array name="screen_orientation_labels">
-    <item>Automaticky</item>
-    <item>Na šířku</item>
-    <item>Na výšku</item>
+    <item>자동</item>
+    <item>가로 보기</item>
+    <item>세로 보기</item>
   </string-array>
   <string-array name="font_size_labels">
-    <item>10 bodů</item>
-    <item>12 bodů</item>
-    <item>14 bodů</item>
-    <item>16 bodů</item>
-    <item>20 bodů</item>
-    <item>24 bodů</item>
+    <item>10 pt</item>
+    <item>12 pt</item>
+    <item>14 pt</item>
+    <item>16 pt</item>
+    <item>20 pt</item>
+    <item>24 pt</item>
   </string-array>
   <string-array name="text_colors_labels">
-    <item>Černý text na bílém pozadí</item>
-    <item>Bílý text na černém pozadí</item>
-    <item>Zelený text na černém pozadí</item>
-    <item>Jantarový text na černém pozadí</item>
-    <item>Červený text na černém pozadí</item>
-    <item>Modrý text na černém pozadí</item>
+    <item>흰색바탕에 검은색 텍스트</item>
+    <item>검정바탕에 흰색 텍스트</item>
+    <item>검정바탕에 녹색 텍스트</item>
+    <item>검정바탕에 주황색 텍스트</item>
+    <item>검정바탕에 빨강색 텍스트</item>
+    <item>검정바탕에 파랑색 텍스트</item>
   </string-array>
 </resources>
