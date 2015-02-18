@@ -18,6 +18,7 @@
   <string name="app_label">Terminál</string>
   <string name="menu_new_tab">Nová karta</string>
   <string name="menu_close_tab">Zavřít kartu</string>
+  <string name="menu_item_settings">Nastavení</string>
   <string name="screen_settings">Nastavení obrazovky</string>
   <string name="fullscreen_mode_title">Celoobrazovkový režim</string>
   <string name="screen_orientation_title">Orientace obrazovky</string>
