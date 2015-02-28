@@ -17,9 +17,9 @@
 -->
 <resources>
   <string-array name="screen_orientation_labels">
-    <item>Automatinis</item>
-    <item>Gulsčias</item>
-    <item>Status</item>
+    <item>Automatisk</item>
+    <item>Landskab</item>
+    <item>Portræt</item>
   </string-array>
   <string-array name="font_size_labels">
     <item>10 pt</item>
@@ -30,11 +30,11 @@
     <item>24 pt</item>
   </string-array>
   <string-array name="text_colors_labels">
-    <item>Juodas tekstas ant balto</item>
-    <item>Baltas tekstas ant juodo</item>
-    <item>Žalias tekstas ant juodo</item>
-    <item>Gintarinis tekstas ant juodo</item>
-    <item>Raudonas tekstas ant juodo</item>
-    <item>Mėlynas tekstas ant juodo</item>
+    <item>Sort tekst på hvid</item>
+    <item>Hvid tekst på sort</item>
+    <item>Grøn tekst på sort</item>
+    <item>Mørkegul tekst på sort</item>
+    <item>Rød tekst på sort</item>
+    <item>Blå tekst på sort</item>
   </string-array>
 </resources>

@@ -15,10 +15,14 @@
      limitations under the License.
 -->
 <resources>
-  <string name="menu_close_tab">Stäng flik</string>
-  <string name="menu_item_settings">Inställningar</string>
-  <string name="screen_settings">Skärminställningar</string>
-  <string name="text_settings">Textinställningar</string>
-  <string name="font_size_title">Teckenstorlek</string>
-  <string name="text_colors_title">Textfärger</string>
+  <string name="app_label">Terminal</string>
+  <string name="menu_new_tab">Ny fane</string>
+  <string name="menu_close_tab">Luk fane</string>
+  <string name="menu_item_settings">Indstillinger</string>
+  <string name="screen_settings">Skærmindstillinger</string>
+  <string name="fullscreen_mode_title">Fuldskærmsvisning</string>
+  <string name="screen_orientation_title">Skærmretning</string>
+  <string name="text_settings">Tekstindstillinger</string>
+  <string name="font_size_title">Skriftstørrelse</string>
+  <string name="text_colors_title">Tekstfarver</string>
 </resources>
