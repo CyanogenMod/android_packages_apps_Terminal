@@ -17,9 +17,9 @@
 -->
 <resources>
   <string-array name="screen_orientation_labels">
-    <item>Automatisch</item>
-    <item>Liggend</item>
-    <item>Staand</item>
+    <item>Avtomatik</item>
+    <item>Mənzərə</item>
+    <item>Portret</item>
   </string-array>
   <string-array name="font_size_labels">
     <item>10 pt</item>
@@ -30,11 +30,11 @@
     <item>24 pt</item>
   </string-array>
   <string-array name="text_colors_labels">
-    <item>Zwarte tekst op wit</item>
-    <item>Witte tekst op zwart</item>
-    <item>Groene tekst op zwart</item>
-    <item>Amber tekst op zwart</item>
-    <item>Rode tekst op zwart</item>
-    <item>Blauwe tekst op zwart</item>
+    <item>Ağ üstündə qara mətn</item>
+    <item>Qara üstündə ağ mətn</item>
+    <item>Qara üstündə yaşıl mətn</item>
+    <item>Qara üstündə narıncı mətn</item>
+    <item>Qara üstündə qırmızı mətn</item>
+    <item>Qara üstündə mavi mətn</item>
   </string-array>
 </resources>
