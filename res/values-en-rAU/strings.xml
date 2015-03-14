@@ -15,14 +15,14 @@
      limitations under the License.
 -->
 <resources>
-  <string name="app_label">Terminale</string>
-  <string name="menu_new_tab">Nuova scheda</string>
-  <string name="menu_close_tab">Chiudi scheda</string>
-  <string name="menu_item_settings">Impostazioni</string>
-  <string name="screen_settings">Impostazioni schermo</string>
-  <string name="fullscreen_mode_title">Modalità schermo intero</string>
-  <string name="screen_orientation_title">Orientamento schermo</string>
-  <string name="text_settings">Impostazioni testo</string>
-  <string name="font_size_title">Dimensione del carattere</string>
-  <string name="text_colors_title">Colori del testo</string>
+  <string name="app_label">Terminal</string>
+  <string name="menu_new_tab">New tab</string>
+  <string name="menu_close_tab">Close tab</string>
+  <string name="menu_item_settings">Settings</string>
+  <string name="screen_settings">Screen settings</string>
+  <string name="fullscreen_mode_title">Fullscreen mode</string>
+  <string name="screen_orientation_title">Screen orientation</string>
+  <string name="text_settings">Text settings</string>
+  <string name="font_size_title">Font size</string>
+  <string name="text_colors_title">Text colors</string>
 </resources>
