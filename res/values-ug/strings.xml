@@ -15,11 +15,14 @@
      limitations under the License.
 -->
 <resources>
-  <string name="app_label">Terminal</string>
-  <string name="menu_close_tab">Stäng flik</string>
-  <string name="menu_item_settings">Inställningar</string>
-  <string name="screen_settings">Skärminställningar</string>
-  <string name="text_settings">Textinställningar</string>
-  <string name="font_size_title">Teckenstorlek</string>
-  <string name="text_colors_title">Textfärger</string>
+  <string name="app_label">تېرمىنال</string>
+  <string name="menu_new_tab">يېڭى بەتكۈچ</string>
+  <string name="menu_close_tab">بەتكۈچ ياپ</string>
+  <string name="menu_item_settings">تەڭشەكلەر</string>
+  <string name="screen_settings">ئېكران تەڭشىكى</string>
+  <string name="fullscreen_mode_title">تولۇق ئېكران ھالىتى</string>
+  <string name="screen_orientation_title">ئېكران يۆنىلىشى</string>
+  <string name="text_settings">تېكىست تەڭشەكلەر</string>
+  <string name="font_size_title">خەت چوڭلۇقى</string>
+  <string name="text_colors_title">تېكست رەڭگى</string>
 </resources>
