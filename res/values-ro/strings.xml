@@ -19,6 +19,7 @@
   <string name="menu_new_tab">Filă nouă</string>
   <string name="menu_close_tab">Închidere filă</string>
   <string name="menu_item_settings">Setări</string>
+  <string name="screen_settings">Setări ecran</string>
   <string name="screen_orientation_title">Orientare ecran</string>
   <string name="font_size_title">Dimensiune font</string>
   <string name="text_colors_title">Culori text</string>
