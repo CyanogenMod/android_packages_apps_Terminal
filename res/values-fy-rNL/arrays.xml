@@ -16,11 +16,6 @@
      limitations under the License.
 -->
 <resources>
-  <string-array name="screen_orientation_labels">
-    <item>Automatinis</item>
-    <item>Gulsčias</item>
-    <item>Stačias</item>
-  </string-array>
   <string-array name="font_size_labels">
     <item>10 pt</item>
     <item>12 pt</item>
@@ -28,13 +23,5 @@
     <item>16 pt</item>
     <item>20 pt</item>
     <item>24 pt</item>
-  </string-array>
-  <string-array name="text_colors_labels">
-    <item>Juodas tekstas ant balto</item>
-    <item>Baltas tekstas ant juodo</item>
-    <item>Žalias tekstas ant juodo</item>
-    <item>Gintarinis tekstas ant juodo</item>
-    <item>Raudonas tekstas ant juodo</item>
-    <item>Mėlynas tekstas ant juodo</item>
   </string-array>
 </resources>
