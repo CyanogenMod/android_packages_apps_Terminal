@@ -16,6 +16,7 @@
 -->
 <resources>
   <string name="app_label">Terminal</string>
+  <string name="menu_new_tab">Ny flik</string>
   <string name="menu_close_tab">Stäng flik</string>
   <string name="menu_item_settings">Inställningar</string>
   <string name="screen_settings">Skärminställningar</string>
