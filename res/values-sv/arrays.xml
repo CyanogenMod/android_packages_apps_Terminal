@@ -17,8 +17,16 @@
 -->
 <resources>
   <string-array name="screen_orientation_labels">
-    <item>Automatic</item>
-    <item>Landscape</item>
+    <item>Automatisk</item>
+    <item>Landskap</item>
     <item>Porträtt</item>
+  </string-array>
+  <string-array name="text_colors_labels">
+    <item>Black text on white</item>
+    <item>Vit text på svart</item>
+    <item>Green text on black</item>
+    <item>Amber text on black</item>
+    <item>Red text on black</item>
+    <item>Blue text on black</item>
   </string-array>
 </resources>
