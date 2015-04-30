@@ -19,6 +19,15 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-sdk android:minSdkVersion="21"  />
 
+    <uses-feature android:name="android.software.leanback"
+    android:required="false" />
+
+    <uses-feature android:name="android.hardware.touchscreen"
+    android:required="false" />
+
+    <uses-feature android:name="android.hardware.screen.portrait"
+    android:required="false" />
+
     <application
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_label"
@@ -32,6 +41,7 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.LEANBACK_SETTINGS" />
             </intent-filter>
         </activity>
 
