@@ -26,6 +26,8 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.Parcelable;
@@ -41,6 +43,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toolbar;
 
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Activity that displays all {@link Terminal} instances running in a bound
  * {@link TerminalService}.
@@ -51,6 +56,7 @@ public class TerminalActivity extends Activity {
 
     private ViewPager mPager;
     private PagerTitleStrip mTitles;
+    private List<ResolveInfo> mLauncherApps;
 
     private final ServiceConnection mServiceConn = new ServiceConnection() {
         @Override
@@ -63,6 +69,9 @@ public class TerminalActivity extends Activity {
             // Give ourselves at least one terminal session
             if (size == 0) {
                 mService.createTerminal();
+                Terminal term = mService.getTerminals().get(0);
+                term.setContext(TerminalActivity.this);
+                term.setApps(mLauncherApps);
             }
 
             // Bind UI to known terminals
@@ -197,6 +206,7 @@ public class TerminalActivity extends Activity {
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setActionBar(toolbar);
+        getActionBar().hide();
 
         mPager = (ViewPager) findViewById(R.id.pager);
         mTitles = (PagerTitleStrip) findViewById(R.id.titles);
@@ -208,6 +218,15 @@ public class TerminalActivity extends Activity {
 
         ViewGroup root = (ViewGroup) findViewById(R.id.root);
         root.getLayoutTransition().enableTransitionType(LayoutTransition.CHANGING);
+
+        final PackageManager pm = getPackageManager();
+
+        Intent mainIntent = new Intent(Intent.ACTION_MAIN, null);
+        mainIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+
+        List<ResolveInfo> appList = pm.queryIntentActivities(mainIntent, 0);
+        Collections.sort(appList, new ResolveInfo.DisplayNameComparator(pm));
+        mLauncherApps = appList;
     }
 
     @Override
