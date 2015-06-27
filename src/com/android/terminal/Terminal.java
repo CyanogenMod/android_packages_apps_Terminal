@@ -16,7 +16,14 @@
 
 package com.android.terminal;
 
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.ResolveInfo;
 import android.graphics.Color;
+import android.util.Log;
+
+import java.util.List;
 
 /**
  * Single terminal session backed by a pseudo terminal on the local device.
@@ -25,6 +32,9 @@ public class Terminal {
     public static final String TAG = "Terminal";
 
     public final int key;
+    private StringBuilder mStringBuilder = new StringBuilder();
+    private List<ResolveInfo> mLauncherApps;
+    private Context mContext;
 
     private static int sNumber = 0;
 
@@ -124,6 +134,14 @@ public class Terminal {
         };
     }
 
+    public void setContext(Context context) {
+        mContext = context;
+    }
+
+    public void setApps(List<ResolveInfo> resolveInfoList) {
+        mLauncherApps = resolveInfoList;
+    }
+
     /**
      * Start thread which internally forks and manages the pseudo terminal.
      */
@@ -189,10 +207,50 @@ public class Terminal {
     }
 
     public boolean dispatchKey(int modifiers, int key) {
-        return nativeDispatchKey(mNativePtr, modifiers, key);
+        boolean appLaunched = false;
+        if (key == TerminalKeys.VTERM_KEY_ENTER) {
+            appLaunched = launchAppIfEntered();
+        }
+
+        if (appLaunched) {
+            return true;
+        } else {
+            return nativeDispatchKey(mNativePtr, modifiers, key);
+        }
+    }
+
+    public boolean launchAppIfEntered() {
+        String command = mStringBuilder.toString();
+        mStringBuilder = new StringBuilder();
+        if (command.startsWith("launch")) {
+            launchApp(command);
+            return true;
+        }
+        return false;
+    }
+
+    public void launchApp(String command) {
+        String name = command.substring(6).trim();
+        for (ResolveInfo info : mLauncherApps) {
+            if (info.activityInfo.name.contains(name) ||
+                info.activityInfo.packageName.contains(name)) {
+                ComponentName componentName = new ComponentName(info.activityInfo.packageName,
+                                                       info.activityInfo.name);
+                Intent i=new Intent(Intent.ACTION_MAIN);
+
+                i.addCategory(Intent.CATEGORY_LAUNCHER);
+                i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK |
+                           Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+                i.setComponent(componentName);
+
+                mContext.startActivity(i);
+            }
+        }
+        Log.d("TEST", "app name: " + name);
     }
 
     public boolean dispatchCharacter(int modifiers, int character) {
+        mStringBuilder.append(Character.toChars(character));
         return nativeDispatchCharacter(mNativePtr, modifiers, character);
     }
 
