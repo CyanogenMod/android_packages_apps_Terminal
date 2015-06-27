@@ -17,6 +17,7 @@
 package com.android.terminal;
 
 import android.graphics.Color;
+import android.util.Log;
 
 /**
  * Single terminal session backed by a pseudo terminal on the local device.
@@ -25,6 +26,7 @@ public class Terminal {
     public static final String TAG = "Terminal";
 
     public final int key;
+    public StringBuilder mStringBuilder = new StringBuilder();
 
     private static int sNumber = 0;
 
@@ -189,10 +191,35 @@ public class Terminal {
     }
 
     public boolean dispatchKey(int modifiers, int key) {
-        return nativeDispatchKey(mNativePtr, modifiers, key);
+        boolean appLaunched = false;
+        if (key == TerminalKeys.VTERM_KEY_ENTER) {
+            appLaunched = launchAppIfEntered();
+        }
+
+        if (appLaunched) {
+            return true;
+        } else {
+            return nativeDispatchKey(mNativePtr, modifiers, key);
+        }
+    }
+
+    public boolean launchAppIfEntered() {
+        String command = mStringBuilder.toString();
+        mStringBuilder = new StringBuilder();
+        if (command.startsWith("launch")) {
+            launchApp(command);
+            return true;
+        }
+        return false;
+    }
+
+    public void launchApp(String command) {
+        String name = command.substring(6).trim();
+        Log.d("TEST", "app name: " + name);
     }
 
     public boolean dispatchCharacter(int modifiers, int character) {
+        mStringBuilder.append(Character.toChars(character));
         return nativeDispatchCharacter(mNativePtr, modifiers, character);
     }
 

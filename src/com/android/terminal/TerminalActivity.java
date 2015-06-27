@@ -197,6 +197,7 @@ public class TerminalActivity extends Activity {
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setActionBar(toolbar);
+        getActionBar().hide();
 
         mPager = (ViewPager) findViewById(R.id.pager);
         mTitles = (PagerTitleStrip) findViewById(R.id.titles);
