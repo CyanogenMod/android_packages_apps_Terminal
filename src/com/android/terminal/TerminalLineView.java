@@ -26,6 +26,9 @@ import android.view.View;
 
 import com.android.terminal.TerminalView.TerminalMetrics;
 
+import java.util.ArrayList;
+import java.util.Random;
+
 /**
  * Rendered contents of a single line of a {@link Terminal} session.
  */
@@ -61,12 +64,35 @@ public class TerminalLineView extends View {
 
         final TerminalMetrics m = mMetrics;
 
+
+        ArrayList<color> colors = new ArrayList<color>();
+
+        /*taken from rainbowrecovery*/
+        /*
+        static int colors[] = { 255, 0, 0,        // red
+                255, 127, 0,      // orange
+                255, 255, 0,      // yellow
+                0, 255, 0,        // green
+                60, 80, 255,      // blue
+                143, 0, 255 };    // violet
+        */
+
+        colors.add(new color(255, 0, 0));
+        colors.add(new color(255, 127, 0));
+        colors.add(new color(255, 255, 0));
+        colors.add(new color(0, 255, 0));
+        colors.add(new color(60, 80, 255));
+        colors.add(new color(143, 0, 255));
+
         int col;
         for (col = 0; col < cols;) {
             mTerm.getCellRun(row, col, m.run);
 
             m.bgPaint.setColor(m.run.bg);
-            m.textPaint.setColor(m.run.fg);
+
+            Random rnd = new Random();
+            color random = colors.get(rnd.nextInt(colors.size() - 1));
+            m.textPaint.setARGB(255, random.r, random.g, random.b);
 
             final int x = col * m.charWidth;
             final int xEnd = x + (m.run.colSize * m.charWidth);
