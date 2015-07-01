@@ -17,9 +17,9 @@
 -->
 <resources>
   <string-array name="screen_orientation_labels">
-    <item>Automatisk</item>
-    <item>Landskap</item>
-    <item>Porträtt</item>
+    <item>Aŭtomata</item>
+    <item>Horizontala</item>
+    <item>Vertikala</item>
   </string-array>
   <string-array name="font_size_labels">
     <item>10 pt</item>
@@ -30,11 +30,11 @@
     <item>24 pt</item>
   </string-array>
   <string-array name="text_colors_labels">
-    <item>Black text on white</item>
-    <item>Vit text på svart</item>
-    <item>Green text on black</item>
-    <item>Amber text on black</item>
-    <item>Red text on black</item>
-    <item>Blue text on black</item>
+    <item>Nigra teksto sur blanka</item>
+    <item>Blanka teksto sur nigra</item>
+    <item>Verda teksto sur nigra</item>
+    <item>Oranĝa teksto sur nigra</item>
+    <item>Ruĝa teksto sur nigra</item>
+    <item>Blua teksto sur nigra</item>
   </string-array>
 </resources>
