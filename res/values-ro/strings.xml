@@ -20,6 +20,7 @@
   <string name="menu_close_tab">Închidere filă</string>
   <string name="menu_item_settings">Setări</string>
   <string name="screen_settings">Setări ecran</string>
+  <string name="fullscreen_mode_title">Mod ecran complet</string>
   <string name="screen_orientation_title">Orientare ecran</string>
   <string name="text_settings">Setări de text</string>
   <string name="font_size_title">Dimensiune font</string>
