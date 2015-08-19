@@ -20,6 +20,8 @@
   <string name="menu_close_tab">Stäng flik</string>
   <string name="menu_item_settings">Inställningar</string>
   <string name="screen_settings">Skärminställningar</string>
+  <string name="fullscreen_mode_title">Fullskärmsläge</string>
+  <string name="screen_orientation_title">Skärmorientering</string>
   <string name="text_settings">Textinställningar</string>
   <string name="font_size_title">Teckenstorlek</string>
   <string name="text_colors_title">Textfärger</string>

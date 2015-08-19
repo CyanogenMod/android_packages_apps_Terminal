@@ -17,24 +17,24 @@
 -->
 <resources>
   <string-array name="screen_orientation_labels">
-    <item>Automatisk</item>
-    <item>Landskap</item>
-    <item>Porträtt</item>
+    <item>Samodejno</item>
+    <item>Ležeče</item>
+    <item>Pokončno</item>
   </string-array>
   <string-array name="font_size_labels">
-    <item>10 pt</item>
-    <item>12 pt</item>
-    <item>14 pt</item>
-    <item>16 pt</item>
-    <item>20 pt</item>
-    <item>24 pt</item>
+    <item>10 točk</item>
+    <item>12 točk</item>
+    <item>14 točk</item>
+    <item>16 točk</item>
+    <item>20 točk</item>
+    <item>24 točk</item>
   </string-array>
   <string-array name="text_colors_labels">
-    <item>Svart text på vit</item>
-    <item>Vit text på svart</item>
-    <item>Grön text på svart</item>
-    <item>Orange text på svart</item>
-    <item>Röd text på svart</item>
-    <item>Blå text på svart</item>
+    <item>Črno besedilo na belem</item>
+    <item>Belo besedilo na črnem</item>
+    <item>Zeleno besedilo na črnem</item>
+    <item>Jantarno besedilo na črnem</item>
+    <item>Rdeče besedilo na črnem</item>
+    <item>Modro besedilo na črnem</item>
   </string-array>
 </resources>

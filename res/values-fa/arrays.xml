@@ -17,8 +17,24 @@
 -->
 <resources>
   <string-array name="screen_orientation_labels">
-    <item>Automatic</item>
+    <item>خودکار</item>
     <item>چشم‌انداز</item>
-    <item>Portrait</item>
+    <item>عمودی</item>
+  </string-array>
+  <string-array name="font_size_labels">
+    <item>10 pt</item>
+    <item>12 pt</item>
+    <item>14 pt</item>
+    <item>16 pt</item>
+    <item>20 pt</item>
+    <item>24 pt</item>
+  </string-array>
+  <string-array name="text_colors_labels">
+    <item>متن سیاه روی سفید</item>
+    <item>متن سفید روی سیاه</item>
+    <item>متن سبز روی سیاه</item>
+    <item>متن نارنجی روی سیاه</item>
+    <item>متن قرمز روی سیاه</item>
+    <item>متن آبی روی سیاه</item>
   </string-array>
 </resources>
