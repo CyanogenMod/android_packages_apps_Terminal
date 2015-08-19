@@ -15,14 +15,14 @@
      limitations under the License.
 -->
 <resources>
-  <string name="app_label">Terminal</string>
-  <string name="menu_new_tab">Filă nouă</string>
-  <string name="menu_close_tab">Închidere filă</string>
-  <string name="menu_item_settings">Setări</string>
-  <string name="screen_settings">Setări ecran</string>
-  <string name="fullscreen_mode_title">Mod ecran complet</string>
-  <string name="screen_orientation_title">Orientare ecran</string>
-  <string name="text_settings">Setări de text</string>
-  <string name="font_size_title">Dimensiune font</string>
-  <string name="text_colors_title">Culori text</string>
+  <string name="app_label">طرفي</string>
+  <string name="menu_new_tab">علامة تبويب جديدة</string>
+  <string name="menu_close_tab">إغلاق علامة التبويب</string>
+  <string name="menu_item_settings">الإعدادات</string>
+  <string name="screen_settings">إعدادات الشاشة</string>
+  <string name="fullscreen_mode_title">وضع ملء الشاشة</string>
+  <string name="screen_orientation_title">اتجاه الشاشة</string>
+  <string name="text_settings">إعدادات النص</string>
+  <string name="font_size_title">حجم الخط</string>
+  <string name="text_colors_title">ألوان النص</string>
 </resources>
