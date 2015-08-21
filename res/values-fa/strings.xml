@@ -23,6 +23,6 @@
   <string name="fullscreen_mode_title">حالت تمام صفحه</string>
   <string name="screen_orientation_title">جهت صفحه</string>
   <string name="text_settings">تنظیمات متن</string>
-  <string name="font_size_title">اندازه قلم</string>
+  <string name="font_size_title">اندازه فونت</string>
   <string name="text_colors_title">رنگ متن</string>
 </resources>
