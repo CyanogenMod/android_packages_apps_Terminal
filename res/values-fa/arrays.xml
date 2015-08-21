@@ -22,12 +22,12 @@
     <item>عمودی</item>
   </string-array>
   <string-array name="font_size_labels">
-    <item>10 pt</item>
-    <item>12 pt</item>
-    <item>14 pt</item>
-    <item>16 pt</item>
-    <item>20 pt</item>
-    <item>24 pt</item>
+    <item>۱۰ پوینت</item>
+    <item>۱۲ پوینت</item>
+    <item>۱۴ پوینت</item>
+    <item>۱۶ پوینت</item>
+    <item>۲۰ پوینت</item>
+    <item>۲۴ پوینت</item>
   </string-array>
   <string-array name="text_colors_labels">
     <item>متن سیاه روی سفید</item>
