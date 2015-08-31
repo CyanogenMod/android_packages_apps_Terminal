@@ -17,7 +17,7 @@
 -->
 <resources>
   <string-array name="screen_orientation_labels">
-    <item>تلقائي</item>
+    <item>Automatic</item>
     <item>أفقي</item>
     <item>رأسي</item>
   </string-array>
