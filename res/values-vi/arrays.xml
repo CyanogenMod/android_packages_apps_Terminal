@@ -17,24 +17,24 @@
 -->
 <resources>
   <string-array name="screen_orientation_labels">
-    <item>Samodejno</item>
-    <item>Ležeča</item>
-    <item>Pokončna</item>
+    <item>Tự động</item>
+    <item>Ngang</item>
+    <item>Dọc</item>
   </string-array>
   <string-array name="font_size_labels">
-    <item>10 točk</item>
-    <item>12 točk</item>
-    <item>14 točk</item>
-    <item>16 točk</item>
-    <item>20 točk</item>
-    <item>24 točk</item>
+    <item>10 pt</item>
+    <item>12 pt</item>
+    <item>14 pt</item>
+    <item>16 pt</item>
+    <item>20 pt</item>
+    <item>24 pt</item>
   </string-array>
   <string-array name="text_colors_labels">
-    <item>Črno besedilo na belem</item>
-    <item>Belo besedilo na črnem</item>
-    <item>Zeleno besedilo na črnem</item>
-    <item>Jantarno besedilo na črnem</item>
-    <item>Rdeče besedilo na črnem</item>
-    <item>Modro besedilo na črnem</item>
+    <item>Chữ đen nền trắng</item>
+    <item>Chữ trắng nền đen</item>
+    <item>Chữ xanh lá nền đen</item>
+    <item>Chữ hổ phách nền đen</item>
+    <item>Chữ đỏ nền đen</item>
+    <item>Chữ xanh nền đen</item>
   </string-array>
 </resources>
