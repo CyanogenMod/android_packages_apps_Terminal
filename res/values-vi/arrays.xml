@@ -17,24 +17,24 @@
 -->
 <resources>
   <string-array name="screen_orientation_labels">
-    <item>تلقائي</item>
-    <item>أفقي</item>
-    <item>رأسي</item>
+    <item>Tự động</item>
+    <item>Ngang</item>
+    <item>Dọc</item>
   </string-array>
   <string-array name="font_size_labels">
-    <item>١٠ نقاط</item>
-    <item>١٢ نقطة</item>
-    <item>١٤ نقطة</item>
-    <item>١٦ نقطة</item>
-    <item>٢٠ نقطة</item>
-    <item>٢٤ نقطة</item>
+    <item>10 pt</item>
+    <item>12 pt</item>
+    <item>14 pt</item>
+    <item>16 pt</item>
+    <item>20 pt</item>
+    <item>24 pt</item>
   </string-array>
   <string-array name="text_colors_labels">
-    <item>نص أسود على أبيض</item>
-    <item>نص أبيض على أسود</item>
-    <item>نص أخضر على أسود</item>
-    <item>نص أصفر على أسود</item>
-    <item>نص أحمر على أسود</item>
-    <item>نص أزرق على أسود</item>
+    <item>Chữ đen nền trắng</item>
+    <item>Chữ trắng nền đen</item>
+    <item>Chữ xanh lá nền đen</item>
+    <item>Chữ hổ phách nền đen</item>
+    <item>Chữ đỏ nền đen</item>
+    <item>Chữ xanh nền đen</item>
   </string-array>
 </resources>

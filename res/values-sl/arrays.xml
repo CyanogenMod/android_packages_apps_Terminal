@@ -18,8 +18,8 @@
 <resources>
   <string-array name="screen_orientation_labels">
     <item>Samodejno</item>
-    <item>Ležeče</item>
-    <item>Pokončno</item>
+    <item>Ležeča</item>
+    <item>Pokončna</item>
   </string-array>
   <string-array name="font_size_labels">
     <item>10 točk</item>
