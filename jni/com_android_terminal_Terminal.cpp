@@ -121,11 +121,13 @@ public:
     bool flushInput();
 
     status_t resize(dimen_t rows, dimen_t cols, dimen_t scrollRows);
+    status_t setColors(int fg, int bg);
 
     status_t onPushline(dimen_t cols, const VTermScreenCell* cells);
     status_t onPopline(dimen_t cols, VTermScreenCell* cells);
+    int onCursorChange(const VTermPos& oldPos, const VTermPos& newPos, bool visible);
 
-    void getCellLocked(VTermPos pos, VTermScreenCell* cell);
+    bool getCellLocked(VTermPos pos, VTermScreenCell* cell);
 
     dimen_t getRows() const;
     dimen_t getCols() const;
@@ -147,6 +149,7 @@ private:
     dimen_t mRows;
     dimen_t mCols;
     bool mKilled;
+    bool mCursorVisible;
 
     ScrollbackLine **mScroll;
     dimen_t mScrollCur;
@@ -187,9 +190,7 @@ static int term_movecursor(VTermPos pos, VTermPos oldpos, int visible, void *use
     ALOGW("term_movecursor");
 #endif
 
-    JNIEnv* env = AndroidRuntime::getJNIEnv();
-    return env->CallIntMethod(term->getCallbacks(), moveCursorMethod, pos.row,
-            pos.col, oldpos.row, oldpos.col, visible);
+    return term->onCursorChange(oldpos, pos, visible != 0);
 }
 
 static int term_settermprop(VTermProp prop, VTermValue *val, void *user) {
@@ -266,9 +267,13 @@ static VTermScreenCallbacks cb = {
     .sb_popline = term_sb_popline,
 };
 
+static inline int toArgb(const VTermColor& color) {
+    return (0xff << 24 | color.red << 16 | color.green << 8 | color.blue);
+}
+
 Terminal::Terminal(jobject callbacks) :
         mCallbacks(callbacks), mRows(25), mCols(80), mKilled(false),
-        mScrollCur(0), mScrollSize(100) {
+        mCursorVisible(true), mScrollCur(0), mScrollSize(100) {
     JNIEnv* env = AndroidRuntime::getJNIEnv();
     mCallbacks = env->NewGlobalRef(callbacks);
 
@@ -433,6 +438,44 @@ status_t Terminal::resize(dimen_t rows, dimen_t cols, dimen_t scrollRows) {
     return 0;
 }
 
+status_t Terminal::setColors(int fg, int bg) {
+    Mutex::Autolock lock(mLock);
+
+    ALOGD("setColors(0x%x, 0x%x)", fg, bg);
+
+    VTermState* state = vterm_obtain_state(mVt);
+    VTermColor oldFgColor, oldBgColor;
+    vterm_state_get_default_colors(state, &oldFgColor, &oldBgColor);
+
+    int changed = fg != toArgb(oldFgColor) || bg != toArgb(oldBgColor);
+    VTermColor fg_color = { (uint8_t)((fg>>16)&0xff),
+                            (uint8_t)((fg>>8)&0xff),
+                            (uint8_t)(fg&0xff) };
+    VTermColor bg_color = { (uint8_t)((bg>>16)&0xff),
+                            (uint8_t)((bg>>8)&0xff),
+                            (uint8_t)(bg&0xff) };
+    vterm_state_set_default_colors(state, &fg_color, &bg_color);
+
+    VTermPos oldPos, newPos;
+    vterm_state_get_cursorpos(state, &oldPos);
+    vterm_state_reset(state, changed);
+    vterm_state_get_cursorpos(state, &newPos);
+
+    if (oldPos.row != newPos.row || oldPos.col != newPos.col) {
+        onCursorChange(oldPos, newPos, mCursorVisible);
+    }
+
+    return 0;
+}
+
+int Terminal::onCursorChange(const VTermPos& oldPos, const VTermPos& newPos, bool visible) {
+    mCursorVisible = visible;
+
+    JNIEnv* env = AndroidRuntime::getJNIEnv();
+    return env->CallIntMethod(getCallbacks(), moveCursorMethod, newPos.row,
+            newPos.col, oldPos.row, oldPos.col, visible);
+}
+
 status_t Terminal::onPushline(dimen_t cols, const VTermScreenCell* cells) {
     ScrollbackLine* line = NULL;
     if (mScrollCur == mScrollSize) {
@@ -481,7 +524,7 @@ status_t Terminal::onPopline(dimen_t cols, VTermScreenCell* cells) {
     return 1;
 }
 
-void Terminal::getCellLocked(VTermPos pos, VTermScreenCell* cell) {
+bool Terminal::getCellLocked(VTermPos pos, VTermScreenCell* cell) {
     // The UI may be asking for cell data while the model is changing
     // underneath it, so we always fill with meaningful data.
 
@@ -493,7 +536,7 @@ void Terminal::getCellLocked(VTermPos pos, VTermScreenCell* cell) {
 #if DEBUG_SCROLLBACK
             cell->bg.red = 255;
 #endif
-            return;
+            return false;
         }
 
         ScrollbackLine* line = mScroll[scrollRow - 1];
@@ -504,7 +547,7 @@ void Terminal::getCellLocked(VTermPos pos, VTermScreenCell* cell) {
 #if DEBUG_SCROLLBACK
             cell->bg.blue = 255;
 #endif
-            return;
+            return true;
         } else {
             // Extend last scrollback cell into invalid region
             line->getCell(line->cols - 1, cell);
@@ -513,7 +556,7 @@ void Terminal::getCellLocked(VTermPos pos, VTermScreenCell* cell) {
 #if DEBUG_SCROLLBACK
             cell->bg.green = 255;
 #endif
-            return;
+            return true;
         }
     }
 
@@ -523,11 +566,12 @@ void Terminal::getCellLocked(VTermPos pos, VTermScreenCell* cell) {
 #if DEBUG_SCROLLBACK
         cell->bg.red = 128;
 #endif
-        return;
+        return false;
     }
 
     // Valid screen cell
     vterm_screen_get_cell(mVts, pos, cell);
+    return true;
 }
 
 dimen_t Terminal::getRows() const {
@@ -571,8 +615,10 @@ static jint com_android_terminal_Terminal_nativeResize(JNIEnv* env,
     return term->resize(rows, cols, scrollRows);
 }
 
-static inline int toArgb(const VTermColor& color) {
-    return (0xff << 24 | color.red << 16 | color.green << 8 | color.blue);
+static jint com_android_terminal_Terminal_nativeSetColors(JNIEnv* env,
+        jclass clazz, jlong ptr, jint fg, jint bg) {
+    Terminal* term = reinterpret_cast<Terminal*>(ptr);
+    return term->setColors(fg, bg);
 }
 
 static inline bool isCellStyleEqual(const VTermScreenCell& a, const VTermScreenCell& b) {
@@ -612,11 +658,13 @@ static jint com_android_terminal_Terminal_nativeGetCellRun(JNIEnv* env,
     size_t colSize = 0;
     while ((size_t) pos.col < term->getCols()) {
         memset(&cell, 0, sizeof(VTermScreenCell));
-        term->getCellLocked(pos, &cell);
+        bool valid = term->getCellLocked(pos, &cell);
 
         if (colSize == 0) {
-            env->SetIntField(run, cellRunFgField, toArgb(cell.fg));
-            env->SetIntField(run, cellRunBgField, toArgb(cell.bg));
+            if (valid) {
+                env->SetIntField(run, cellRunFgField, toArgb(cell.fg));
+                env->SetIntField(run, cellRunBgField, toArgb(cell.bg));
+            }
             memcpy(&firstCell, &cell, sizeof(VTermScreenCell));
         } else {
             if (!isCellStyleEqual(cell, firstCell)) {
@@ -684,6 +732,7 @@ static JNINativeMethod gMethods[] = {
     { "nativeDestroy", "(J)I", (void*)com_android_terminal_Terminal_nativeDestroy },
     { "nativeRun", "(J)I", (void*)com_android_terminal_Terminal_nativeRun },
     { "nativeResize", "(JIII)I", (void*)com_android_terminal_Terminal_nativeResize },
+    { "nativeSetColors", "(JII)I", (void*)com_android_terminal_Terminal_nativeSetColors },
     { "nativeGetCellRun", "(JIILcom/android/terminal/Terminal$CellRun;)I", (void*)com_android_terminal_Terminal_nativeGetCellRun },
     { "nativeGetRows", "(J)I", (void*)com_android_terminal_Terminal_nativeGetRows },
     { "nativeGetCols", "(J)I", (void*)com_android_terminal_Terminal_nativeGetCols },

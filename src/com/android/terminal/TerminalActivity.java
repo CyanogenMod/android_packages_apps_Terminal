@@ -18,14 +18,18 @@ package com.android.terminal;
 
 import static com.android.terminal.Terminal.TAG;
 
+import android.animation.LayoutTransition;
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
+import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.Parcelable;
+import android.preference.PreferenceManager;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.PagerTitleStrip;
 import android.support.v4.view.ViewPager;
@@ -35,6 +39,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toolbar;
 
 /**
  * Activity that displays all {@link Terminal} instances running in a bound
@@ -142,23 +147,80 @@ public class TerminalActivity extends Activity {
         }
     };
 
+    private final View.OnSystemUiVisibilityChangeListener mUiVisibilityChangeListener =
+            new View.OnSystemUiVisibilityChangeListener() {
+        @Override
+        public void onSystemUiVisibilityChange(int visibility) {
+            if ((visibility & View.SYSTEM_UI_FLAG_FULLSCREEN) != 0) {
+                getActionBar().hide();
+            } else {
+                getActionBar().show();
+            }
+        }
+    };
+
+    public void updatePreferences() {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        if (sp.getBoolean(TerminalSettingsActivity.KEY_FULLSCREEN_MODE, false)) {
+            getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN);
+            getActionBar().hide();
+        } else {
+            getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+            getActionBar().show();
+        }
+
+        final String orientation = sp.getString(TerminalSettingsActivity.KEY_SCREEN_ORIENTATION,
+                "automatic");
+        if (orientation.equals("automatic")) {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR);
+        } else if (orientation.equals("portrait")) {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        } else if (orientation.equals("landscape")) {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        }
+
+        for (int i = 0; i < mPager.getChildCount(); ++i) {
+            View v = mPager.getChildAt(i);
+            if (v instanceof TerminalView) {
+                TerminalView view = (TerminalView) v;
+                view.updatePreferences();
+                view.invalidateViews();
+            }
+        }
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity);
 
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setActionBar(toolbar);
+
         mPager = (ViewPager) findViewById(R.id.pager);
         mTitles = (PagerTitleStrip) findViewById(R.id.titles);
 
         mPager.setAdapter(mTermAdapter);
+
+        View decorView = getWindow().getDecorView();
+        decorView.setOnSystemUiVisibilityChangeListener(mUiVisibilityChangeListener);
+
+        ViewGroup root = (ViewGroup) findViewById(R.id.root);
+        root.getLayoutTransition().enableTransitionType(LayoutTransition.CHANGING);
     }
 
     @Override
     protected void onStart() {
         super.onStart();
-        bindService(
-                new Intent(this, TerminalService.class), mServiceConn, Context.BIND_AUTO_CREATE);
+        bindService(new Intent(this, TerminalService.class),
+                mServiceConn, Context.BIND_AUTO_CREATE);
+    }
+
+    @Override
+    protected void onResume() {
+        updatePreferences();
+        super.onResume();
     }
 
     @Override
@@ -197,6 +259,10 @@ public class TerminalActivity extends Activity {
                 mService.destroyTerminal(key);
                 mTermAdapter.notifyDataSetChanged();
                 invalidateOptionsMenu();
+                return true;
+            }
+            case R.id.menu_item_settings: {
+                startActivity(new Intent(TerminalActivity.this, TerminalSettingsActivity.class));
                 return true;
             }
         }
