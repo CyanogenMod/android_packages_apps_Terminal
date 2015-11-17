@@ -17,7 +17,7 @@
         package="com.android.terminal">
 
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-sdk android:minSdkVersion="21"  />
+    <uses-sdk android:minSdkVersion="23"  />
 
     <uses-feature android:name="android.software.leanback"
     android:required="false" />
