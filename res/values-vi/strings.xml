@@ -15,7 +15,14 @@
      limitations under the License.
 -->
 <resources>
+  <string name="app_label">Thiết bị đầu cuối</string>
+  <string name="menu_new_tab">Thẻ mới</string>
+  <string name="menu_close_tab">Đóng thẻ</string>
   <string name="menu_item_settings">Cài đặt</string>
   <string name="screen_settings">Cài đặt màn hình</string>
+  <string name="fullscreen_mode_title">Chế độ toàn màn hình</string>
+  <string name="screen_orientation_title">Xoay màn hình</string>
   <string name="text_settings">Cài đặt văn bản</string>
+  <string name="font_size_title">Cỡ phông chữ</string>
+  <string name="text_colors_title">Màu chữ</string>
 </resources>
