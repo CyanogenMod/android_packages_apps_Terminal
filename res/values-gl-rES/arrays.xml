@@ -17,24 +17,8 @@
 -->
 <resources>
   <string-array name="screen_orientation_labels">
-    <item>Tự động</item>
-    <item>Ngang</item>
-    <item>Dọc</item>
-  </string-array>
-  <string-array name="font_size_labels">
-    <item>10 pt</item>
-    <item>12 pt</item>
-    <item>14 pt</item>
-    <item>16 pt</item>
-    <item>20 pt</item>
-    <item>24 pt</item>
-  </string-array>
-  <string-array name="text_colors_labels">
-    <item>Chữ đen nền trắng</item>
-    <item>Chữ trắng nền đen</item>
-    <item>Chữ xanh lá nền đen</item>
-    <item>Chữ hổ phách nền đen</item>
-    <item>Chữ đỏ nền đen</item>
-    <item>Chữ xanh nền đen</item>
+    <item>Automático</item>
+    <item>Paisaxe</item>
+    <item>Retrato</item>
   </string-array>
 </resources>
