@@ -31,7 +31,7 @@
   </string-array>
   <string-array name="text_colors_labels">
     <item>Texto negro sobre fondo blanco</item>
-    <item>White text on black</item>
+    <item>Texto blanco sobre fondo negro</item>
     <item>Texto verde sobre fondo negro</item>
     <item>Texto naranja sobre fondo negro</item>
     <item>Texto rojo sobre fondo negro</item>
