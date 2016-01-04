@@ -17,9 +17,9 @@
 -->
 <resources>
   <string-array name="screen_orientation_labels">
-    <item>อัตโนมัติ</item>
-    <item>แนวนอน</item>
-    <item>แนวตั้ง</item>
+    <item>Tự động</item>
+    <item>Ngang</item>
+    <item>Dọc</item>
   </string-array>
   <string-array name="font_size_labels">
     <item>10 pt</item>
@@ -30,11 +30,11 @@
     <item>24 pt</item>
   </string-array>
   <string-array name="text_colors_labels">
-    <item>ตัวอักษรดำพื้นหลังขาว</item>
-    <item>ตัวอักษรขาวพื้นหลังดำ</item>
-    <item>ตัวอักษรเขียวพื้นหลังดำ</item>
-    <item>ตัวอักษรเหลืองพื้นหลังดำ</item>
-    <item>ตัวอักษรแดงพื้นหลังดำ</item>
-    <item>ตัวอักษรน้ำเงินพื้นหลังดำ</item>
+    <item>Chữ đen nền trắng</item>
+    <item>Chữ trắng nền đen</item>
+    <item>Chữ xanh lá nền đen</item>
+    <item>Chữ hổ phách nền đen</item>
+    <item>Chữ đỏ nền đen</item>
+    <item>Chữ xanh dương nền đen</item>
   </string-array>
 </resources>

@@ -17,4 +17,12 @@
 <resources>
   <string name="app_label">เทอร์มินัล</string>
   <string name="menu_new_tab">แท็บใหม่</string>
+  <string name="menu_close_tab">ปิดแท็บ</string>
+  <string name="menu_item_settings">การตั้งค่า</string>
+  <string name="screen_settings">การตั้งค่าหน้าจอ</string>
+  <string name="fullscreen_mode_title">รูปแบบเต็มจอ</string>
+  <string name="screen_orientation_title">การวางตำแหน่งหน้าจอ</string>
+  <string name="text_settings">การตั้งค่าข้อความ</string>
+  <string name="font_size_title">ขนาดแบบอักษร</string>
+  <string name="text_colors_title">สีข้อความ</string>
 </resources>
