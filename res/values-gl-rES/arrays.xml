@@ -19,6 +19,6 @@
   <string-array name="screen_orientation_labels">
     <item>Automático</item>
     <item>Paisaxe</item>
-    <item>Retrato</item>
+    <item>Portrait</item>
   </string-array>
 </resources>

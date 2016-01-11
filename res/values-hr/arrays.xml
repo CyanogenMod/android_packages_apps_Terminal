@@ -17,24 +17,16 @@
 -->
 <resources>
   <string-array name="screen_orientation_labels">
-    <item>อัตโนมัติ</item>
-    <item>แนวนอน</item>
-    <item>แนวตั้ง</item>
+    <item>Automatski</item>
+    <item>Krajolik</item>
+    <item>Portret</item>
   </string-array>
   <string-array name="font_size_labels">
-    <item>10 pt</item>
-    <item>12 pt</item>
-    <item>14 pt</item>
-    <item>16 pt</item>
-    <item>20 pt</item>
-    <item>24 pt</item>
-  </string-array>
-  <string-array name="text_colors_labels">
-    <item>ตัวอักษรดำพื้นหลังขาว</item>
-    <item>ตัวอักษรขาวพื้นหลังดำ</item>
-    <item>ตัวอักษรเขียวพื้นหลังดำ</item>
-    <item>ตัวอักษรเหลืองพื้นหลังดำ</item>
-    <item>ตัวอักษรแดงพื้นหลังดำ</item>
-    <item>ตัวอักษรน้ำเงินพื้นหลังดำ</item>
+    <item>10 točaka</item>
+    <item>12 točaka</item>
+    <item>14 točaka</item>
+    <item>16 točaka</item>
+    <item>20 točaka</item>
+    <item>24 točke</item>
   </string-array>
 </resources>
