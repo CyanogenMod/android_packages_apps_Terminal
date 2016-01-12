@@ -17,8 +17,16 @@
 -->
 <resources>
   <string-array name="screen_orientation_labels">
-    <item>Automático</item>
-    <item>Paisaxe</item>
-    <item>Portrait</item>
+    <item>Automatski</item>
+    <item>Krajolik</item>
+    <item>Portret</item>
+  </string-array>
+  <string-array name="font_size_labels">
+    <item>10 točaka</item>
+    <item>12 točaka</item>
+    <item>14 točaka</item>
+    <item>16 točaka</item>
+    <item>20 točaka</item>
+    <item>24 točke</item>
   </string-array>
 </resources>
