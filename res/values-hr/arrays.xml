@@ -29,4 +29,12 @@
     <item>20 točaka</item>
     <item>24 točke</item>
   </string-array>
+  <string-array name="text_colors_labels">
+    <item>Crni tekst na bijelom</item>
+    <item>Bijeli tekst na crnom</item>
+    <item>Zeleni tekst na crnom</item>
+    <item>Narančasti tekst na crnom</item>
+    <item>Crveni tekst na crnom</item>
+    <item>Plavi tekst na crnom</item>
+  </string-array>
 </resources>
