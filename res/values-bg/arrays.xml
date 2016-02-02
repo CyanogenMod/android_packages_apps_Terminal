@@ -17,24 +17,24 @@
 -->
 <resources>
   <string-array name="screen_orientation_labels">
-    <item>Automatski</item>
-    <item>Krajolik</item>
-    <item>Portret</item>
+    <item>Автоматичен</item>
+    <item>Пейзаж</item>
+    <item>Портрет</item>
   </string-array>
   <string-array name="font_size_labels">
-    <item>10 točaka</item>
-    <item>12 točaka</item>
-    <item>14 točaka</item>
-    <item>16 točaka</item>
-    <item>20 točaka</item>
-    <item>24 točke</item>
+    <item>10 точков</item>
+    <item>12 точков</item>
+    <item>14 точков</item>
+    <item>16 точков</item>
+    <item>20 точков</item>
+    <item>24 точков</item>
   </string-array>
   <string-array name="text_colors_labels">
-    <item>Crni tekst na bijelom</item>
-    <item>Bijeli tekst na crnom</item>
-    <item>Zeleni tekst na crnom</item>
-    <item>Narančasti tekst na crnom</item>
-    <item>Crveni tekst na crnom</item>
-    <item>Plavi tekst na crnom</item>
+    <item>Черен текст на бял фон</item>
+    <item>Бял текст на черен фон</item>
+    <item>Зелен текст на черен фон</item>
+    <item>Кехлибарен текст на черен фон</item>
+    <item>Червен текст на черен фон</item>
+    <item>Син текст на черен фон</item>
   </string-array>
 </resources>
