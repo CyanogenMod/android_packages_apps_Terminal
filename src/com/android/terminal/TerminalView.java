@@ -137,7 +137,7 @@ public class TerminalView extends ListView {
             if (parent.requestFocus()) {
                 InputMethodManager imm = (InputMethodManager)
                         parent.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
-                imm.showSoftInput(parent, InputMethodManager.SHOW_IMPLICIT);
+                imm.showSoftInput(parent, InputMethodManager.SHOW_FORCED);
             }
         }
     };
