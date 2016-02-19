@@ -30,11 +30,11 @@
     <item>24 pt</item>
   </string-array>
   <string-array name="text_colors_labels">
-    <item>Schwarzer Text auf weiß</item>
+    <item>Schwarzer Text auf Weiß</item>
     <item>Weißer Text auf Schwarz</item>
-    <item>Grüner Text auf schwarz</item>
-    <item>Oranger Text auf schwarz</item>
-    <item>Roter Text auf schwarz</item>
-    <item>Blauer Text auf schwarz</item>
+    <item>Grüner Text auf Schwarz</item>
+    <item>Oranger Text auf Schwarz</item>
+    <item>Roter Text auf Schwarz</item>
+    <item>Blauer Text auf Schwarz</item>
   </string-array>
 </resources>
