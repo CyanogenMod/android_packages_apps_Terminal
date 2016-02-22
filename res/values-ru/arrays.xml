@@ -18,8 +18,8 @@
 <resources>
   <string-array name="screen_orientation_labels">
     <item>Автоматически</item>
-    <item>Горизонтальная ориентация</item>
-    <item>Вертикальная ориентация</item>
+    <item>Альбомная ориентация</item>
+    <item>Книжная ориентация</item>
   </string-array>
   <string-array name="font_size_labels">
     <item>10 пунктов</item>
