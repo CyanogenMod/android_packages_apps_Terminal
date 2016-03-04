@@ -15,6 +15,7 @@
      limitations under the License.
 -->
 <resources>
+  <!-- Title of the Terminal activity. -->
   <string name="app_label">ترمینال</string>
   <string name="menu_new_tab">زبانه‌ی جدید</string>
   <string name="menu_close_tab">بستن زبانه</string>
