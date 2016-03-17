@@ -16,4 +16,14 @@
 -->
 <resources>
   <!-- Title of the Terminal activity. -->
+  <string name="app_label">Terminal</string>
+  <string name="menu_new_tab">Nueva pestaña</string>
+  <string name="menu_close_tab">Cerrar pestaña</string>
+  <string name="menu_item_settings">Opciones</string>
+  <string name="screen_settings">Ajustes de pantalla</string>
+  <string name="fullscreen_mode_title">Pantalla completa</string>
+  <string name="screen_orientation_title">Orientación de la pantalla</string>
+  <string name="text_settings">Configuración de texto</string>
+  <string name="font_size_title">Tamaño de letra</string>
+  <string name="text_colors_title">Colores de texto</string>
 </resources>

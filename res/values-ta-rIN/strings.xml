@@ -16,4 +16,14 @@
 -->
 <resources>
   <!-- Title of the Terminal activity. -->
+  <string name="app_label">டெர்மினல்</string>
+  <string name="menu_new_tab">புதிய தாவல்</string>
+  <string name="menu_close_tab">தாவலை மூடு</string>
+  <string name="menu_item_settings">அமைப்புகள்</string>
+  <string name="screen_settings">திரை அமைப்பு</string>
+  <string name="fullscreen_mode_title">முழுத்திரை பயன்முறை</string>
+  <string name="screen_orientation_title">திரை திசை</string>
+  <string name="text_settings">உரை அமைப்புகள்</string>
+  <string name="font_size_title">எழுத்துரு அளவு</string>
+  <string name="text_colors_title">உரை வண்ணங்கள்</string>
 </resources>

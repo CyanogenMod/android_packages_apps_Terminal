@@ -16,4 +16,14 @@
 -->
 <resources>
   <!-- Title of the Terminal activity. -->
+  <string name="app_label">టెర్మినల్</string>
+  <string name="menu_new_tab">కొత్త ట్యాబ్</string>
+  <string name="menu_close_tab">ట్యాబ్‌ను మూసివేయి</string>
+  <string name="menu_item_settings">సెట్టింగ్‌లు</string>
+  <string name="screen_settings">స్క్రీన్ సెట్టింగ్‌లు</string>
+  <string name="fullscreen_mode_title">పూర్తి స్క్రీన్ మోడ్</string>
+  <string name="screen_orientation_title">స్క్రీన్ విన్యాసం</string>
+  <string name="text_settings">టెక్స్ట్ సెట్టింగులు</string>
+  <string name="font_size_title">ఫాంట్ పరిమాణం</string>
+  <string name="text_colors_title">టెక్స్ట్ వర్ణాలు</string>
 </resources>
