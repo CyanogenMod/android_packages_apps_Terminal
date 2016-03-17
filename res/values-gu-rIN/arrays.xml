@@ -17,24 +17,24 @@
 -->
 <resources>
   <string-array name="screen_orientation_labels">
-    <item>אוטומטי</item>
-    <item>תצוגת רוחב</item>
-    <item>תצוגת אורך</item>
+    <item>સ્વચલિત</item>
+    <item>લેન્ડસ્કેપ</item>
+    <item>પોર્ટરેટ</item>
   </string-array>
   <string-array name="font_size_labels">
-    <item>10 נק\'</item>
-    <item>12 נק\'</item>
-    <item>14 נק\'</item>
-    <item>16 נק\'</item>
-    <item>20 נק\'</item>
-    <item>24 נק\'</item>
+    <item>10 પૉઇંટ</item>
+    <item>12 પૉઇંટ</item>
+    <item>14 પૉઇંટ</item>
+    <item>16 પૉઇંટ</item>
+    <item>20 પૉઇંટ</item>
+    <item>24 પૉઇંટ</item>
   </string-array>
   <string-array name="text_colors_labels">
-    <item>טקסט שחור על רקע לבן</item>
-    <item>טקסט לבן על רקע שחור</item>
-    <item>טקסט ירוק על רקע שחור</item>
-    <item>טקסט צהוב על רקע שחור</item>
-    <item>טקסט אדום על רקע שחור</item>
-    <item>טקסט כחול על רקע שחור</item>
+    <item>સફેદ પર કાળું ટેક્સ્ટ</item>
+    <item>કાળા પર સફેદ ટેક્સ્ટ</item>
+    <item>કાળા પર લીલું ટેક્સ્ટ</item>
+    <item>કાળા પર અંબર ટેક્સ્ટ</item>
+    <item>કાળા પર લાલ ટેક્સ્ટ</item>
+    <item>કાળા પર આસમાની ટેક્સ્ટ</item>
   </string-array>
 </resources>

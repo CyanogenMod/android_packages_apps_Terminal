@@ -17,24 +17,24 @@
 -->
 <resources>
   <string-array name="screen_orientation_labels">
-    <item>אוטומטי</item>
-    <item>תצוגת רוחב</item>
-    <item>תצוגת אורך</item>
+    <item>స్వయంచాలకం</item>
+    <item>సమతలదిశ</item>
+    <item>పటం</item>
   </string-array>
   <string-array name="font_size_labels">
-    <item>10 נק\'</item>
-    <item>12 נק\'</item>
-    <item>14 נק\'</item>
-    <item>16 נק\'</item>
-    <item>20 נק\'</item>
-    <item>24 נק\'</item>
+    <item>10 పాయింట్లు</item>
+    <item>12 పాయింట్లు</item>
+    <item>14 పాయింట్లు</item>
+    <item>16 పాయింట్లు</item>
+    <item>20 పాయింట్లు</item>
+    <item>24 పాయింట్లు</item>
   </string-array>
   <string-array name="text_colors_labels">
-    <item>טקסט שחור על רקע לבן</item>
-    <item>טקסט לבן על רקע שחור</item>
-    <item>טקסט ירוק על רקע שחור</item>
-    <item>טקסט צהוב על רקע שחור</item>
-    <item>טקסט אדום על רקע שחור</item>
-    <item>טקסט כחול על רקע שחור</item>
+    <item>తెలుపు పైన నలుపు టెక్స్ట్</item>
+    <item>నలుపు పైన తెలుపు టెక్స్ట్</item>
+    <item>నలుపు పైన ఆకుపచ్చ టెక్స్ట్</item>
+    <item>నలుపు పైన అంబర్ టెక్స్ట్</item>
+    <item>నలుపు పైన ఎరుపు టెక్స్ట్</item>
+    <item>నలుపు పైన నీలం టెక్స్ట్</item>
   </string-array>
 </resources>
