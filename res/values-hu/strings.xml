@@ -15,6 +15,7 @@
      limitations under the License.
 -->
 <resources>
+  <!-- Title of the Terminal activity. -->
   <string name="app_label">Terminál</string>
   <string name="menu_new_tab">Új fül</string>
   <string name="menu_close_tab">Fül bezárása</string>

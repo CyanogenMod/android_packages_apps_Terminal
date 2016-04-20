@@ -15,6 +15,7 @@
      limitations under the License.
 -->
 <resources>
+  <!-- Title of the Terminal activity. -->
   <string name="menu_new_tab">تاقێکی نوێ</string>
   <string name="menu_close_tab">داخستنی تاب</string>
   <string name="menu_item_settings">ڕێکخستنه‌کان</string>
