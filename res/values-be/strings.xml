@@ -15,6 +15,7 @@
      limitations under the License.
 -->
 <resources>
+  <!-- Title of the Terminal activity. -->
   <string name="app_label">Тэрмінал</string>
   <string name="menu_new_tab">Новая ўкладка</string>
   <string name="menu_close_tab">Зачыніць укладку</string>
