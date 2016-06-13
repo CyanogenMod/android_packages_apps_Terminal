@@ -15,6 +15,7 @@
      limitations under the License.
 -->
 <resources>
+  <!-- Title of the Terminal activity. -->
   <string name="app_label">Τερματικό</string>
   <string name="menu_new_tab">Νέα καρτέλα</string>
   <string name="menu_close_tab">Κλείσιμο καρτέλας</string>

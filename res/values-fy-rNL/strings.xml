@@ -15,5 +15,6 @@
      limitations under the License.
 -->
 <resources>
+  <!-- Title of the Terminal activity. -->
   <string name="menu_item_settings">Ynstellingen</string>
 </resources>

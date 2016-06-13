@@ -18,8 +18,8 @@
 <resources>
   <string-array name="screen_orientation_labels">
     <item>خودکار</item>
-    <item>چشم‌انداز</item>
-    <item>پرتره</item>
+    <item>افقی</item>
+    <item>عمودی</item>
   </string-array>
   <string-array name="font_size_labels">
     <item>۱۰ پوینت</item>

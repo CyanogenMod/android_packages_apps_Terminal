@@ -18,7 +18,7 @@
 <resources>
   <string-array name="screen_orientation_labels">
     <item>Automática</item>
-    <item>Apaisada</item>
+    <item>Horizontal</item>
     <item>Vertical</item>
   </string-array>
   <string-array name="font_size_labels">
