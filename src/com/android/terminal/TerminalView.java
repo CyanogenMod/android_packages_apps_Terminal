@@ -251,7 +251,7 @@ public class TerminalView extends ListView {
     private View.OnKeyListener mKeyListener = new OnKeyListener() {
         @Override
         public boolean onKey(View v, int keyCode, KeyEvent event) {
-            final boolean res = mTermKeys.onKey(v, keyCode, event);
+            final boolean res = mTermKeys.onKey(v, keyCode, event, getContext());
             if (res && SCROLL_ON_INPUT) {
                 scrollToBottom(true);
             }

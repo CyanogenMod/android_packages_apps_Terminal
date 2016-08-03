@@ -36,6 +36,7 @@ public class TerminalSettingsActivity extends PreferenceActivity {
     public static final String KEY_SCREEN_ORIENTATION = "screen_orientation";
     public static final String KEY_FONT_SIZE = "font_size";
     public static final String KEY_TEXT_COLORS = "text_colors";
+    public static final String KEY_VOLUME_MODE = "volumekey_mode";
 
     private SwitchPreference mFullscreenModePref;
     private ListPreference mScreenOrientationPref;

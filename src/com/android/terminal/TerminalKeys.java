@@ -16,6 +16,8 @@
 
 package com.android.terminal;
 
+import android.content.Context;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
@@ -85,7 +87,10 @@ public class TerminalKeys {
         return mod;
     }
 
-    public static int getKey(KeyEvent event) {
+    public static int getKey(KeyEvent event, Context context) {
+        final boolean mVolumeAsInput = PreferenceManager.getDefaultSharedPreferences(context)
+                .getBoolean(TerminalSettingsActivity.KEY_VOLUME_MODE, false);
+
         switch(event.getKeyCode()) {
             case KeyEvent.KEYCODE_ENTER:
                 return VTERM_KEY_ENTER;
@@ -115,6 +120,10 @@ public class TerminalKeys {
                 return VTERM_KEY_PAGEUP;
             case KeyEvent.KEYCODE_PAGE_DOWN:
                 return VTERM_KEY_PAGEDOWN;
+            case KeyEvent.KEYCODE_VOLUME_UP:
+                return mVolumeAsInput ? VTERM_KEY_UP : 0;
+            case KeyEvent.KEYCODE_VOLUME_DOWN:
+                return mVolumeAsInput ? VTERM_KEY_DOWN : 0;
             default:
                 return 0;
         }
@@ -167,12 +176,11 @@ public class TerminalKeys {
         return c;
     }
 
-    public boolean onKey(View v, int keyCode, KeyEvent event) {
+    public boolean onKey(View v, int keyCode, KeyEvent event, Context context) {
         if (mTerm == null || event.getAction() == KeyEvent.ACTION_UP) return false;
-
         int modifiers = getModifiers(event);
 
-        int c = getKey(event);
+        int c = getKey(event, context);
         if (c != 0) {
             if (DEBUG) {
                 Log.d(TAG, "dispatched key event: " +

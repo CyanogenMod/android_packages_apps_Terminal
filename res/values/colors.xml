@@ -13,8 +13,10 @@
     limitations under the License.
 -->
 <resources>
-    <!-- Material -->
-    <color name="primary">#212121</color>
+    <color name="white">#ffffff</color>
+    <color name="black">#000000</color>
+
+    <color name="primary">#333333</color>
     <color name="primary_dark">#424242</color>
     <color name="accent">#fafafa</color>
 </resources>

@@ -24,29 +24,38 @@
             android:key="fullscreen_mode"
             android:title="@string/fullscreen_mode_title"
             android:defaultValue="false" />
+        <SwitchPreference
+            android:key="volumekey_mode"
+            android:title="@string/volumekey_title"
+            android:summary="@string/volumekey_summary"
+            android:defaultValue="false" />
         <ListPreference
             android:key="screen_orientation"
             android:title="@string/screen_orientation_title"
+            android:summary="%s"
             android:dialogTitle="@string/screen_orientation_title"
             android:entries="@array/screen_orientation_labels"
-            android:entryValues="@array/screen_orientation_values" />
+            android:entryValues="@array/screen_orientation_values"
+            android:defaultValue="automatic"/>
     </PreferenceCategory>
     <PreferenceCategory
         android:title="@string/text_settings">
         <ListPreference
             android:key="font_size"
             android:title="@string/font_size_title"
+            android:summary="%s"
             android:dialogTitle="@string/font_size_title"
             android:entries="@array/font_size_labels"
             android:entryValues="@array/font_size_values"
             android:defaultValue="12" />
         <ListPreference
             android:key="text_colors"
+            android:summary="%s"
             android:title="@string/text_colors_title"
             android:dialogTitle="@string/text_colors_title"
             android:entries="@array/text_colors_labels"
             android:entryValues="@array/text_colors_values"
-            android:defaultValue="white/black" />
+            android:defaultValue="#FFFFFF/#000000" />
     </PreferenceCategory>
     <!-- Keyboard category -->
     <!-- Shell category -->

@@ -52,12 +52,12 @@
         <item>Blue text on black</item>
     </string-array>
     <string-array name="text_colors_values" translatable="false">
-        <item>#212121/#fafafa</item>
-        <item>#fafafa/#212121</item>
-        <item>#4CAF50/#212121</item>
-        <item>#FF9800/#212121</item>
-        <item>#F44336/#212121</item>
-        <item>#3F51B5/#212121</item>
+        <item>#000000/#FFFFFF</item>
+        <item>#FFFFFF/#000000</item>
+        <item>#4CAF50/#000000</item>
+        <item>#FF9800/#000000</item>
+        <item>#F44336/#000000</item>
+        <item>#3F51B5/#000000</item>
     </string-array>
 
 </resources>

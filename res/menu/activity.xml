@@ -24,8 +24,10 @@
         android:id="@+id/menu_close_tab"
         android:title="@string/menu_close_tab"
         android:icon="@drawable/ic_menu_close_clear_cancel"
-        android:showAsAction="ifRoom" />
+        android:showAsAction="always" />
     <item
         android:id="@+id/menu_item_settings"
-        android:title="@string/menu_item_settings" />
+        android:title="@string/menu_item_settings"
+        android:icon="@drawable/ic_menu_settings"
+        android:showAsAction="always"/>
 </menu>
