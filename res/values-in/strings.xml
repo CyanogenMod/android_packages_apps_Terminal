@@ -24,6 +24,6 @@
   <string name="fullscreen_mode_title">Modus layar penuh</string>
   <string name="screen_orientation_title">Orientasi Layar</string>
   <string name="text_settings">Pengaturan teks</string>
-  <string name="font_size_title">Ukuran fon</string>
+  <string name="font_size_title">Ukuran huruf</string>
   <string name="text_colors_title">Warna teks</string>
 </resources>
