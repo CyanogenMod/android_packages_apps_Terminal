@@ -16,6 +16,14 @@
 -->
 <resources>
   <!-- Title of the Terminal activity. -->
-  <string name="menu_new_tab">Nova langeto</string>
-  <string name="menu_item_settings">Agordoj</string>
+  <string name="app_label">Тэрмінал</string>
+  <string name="menu_new_tab">Новая ўкладка</string>
+  <string name="menu_close_tab">Зачыніць укладку</string>
+  <string name="menu_item_settings">Налады</string>
+  <string name="screen_settings">Налады экрана</string>
+  <string name="fullscreen_mode_title">Поўнаэкранны рэжым</string>
+  <string name="screen_orientation_title">Становішча экрана</string>
+  <string name="text_settings">Налады тэксту</string>
+  <string name="font_size_title">Памер шрыфту</string>
+  <string name="text_colors_title">Колер тэксту</string>
 </resources>
