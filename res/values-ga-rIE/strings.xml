@@ -16,6 +16,4 @@
 -->
 <resources>
   <!-- Title of the Terminal activity. -->
-  <string name="menu_new_tab">Nova langeto</string>
-  <string name="menu_item_settings">Agordoj</string>
 </resources>

@@ -17,24 +17,24 @@
 -->
 <resources>
   <string-array name="screen_orientation_labels">
-    <item>Aŭtomata</item>
-    <item>Horizontala</item>
-    <item>Vertikala</item>
+    <item>Аўтаматычна</item>
+    <item>Гарызантальная арыентацыя</item>
+    <item>Вертыкальная арыентацыя</item>
   </string-array>
   <string-array name="font_size_labels">
-    <item>10 pt</item>
-    <item>12 pt</item>
-    <item>14 pt</item>
-    <item>16 pt</item>
-    <item>20 pt</item>
-    <item>24 pt</item>
+    <item>10 пунктаў</item>
+    <item>12 пунктаў</item>
+    <item>14 пунктаў</item>
+    <item>16 пунктаў</item>
+    <item>20 пунктаў</item>
+    <item>24 пунктаў</item>
   </string-array>
   <string-array name="text_colors_labels">
-    <item>Nigra teksto sur blanka</item>
-    <item>Blanka teksto sur nigra</item>
-    <item>Verda teksto sur nigra</item>
-    <item>Oranĝa teksto sur nigra</item>
-    <item>Ruĝa teksto sur nigra</item>
-    <item>Blua teksto sur nigra</item>
+    <item>Чорны тэкст на белым</item>
+    <item>Белы тэкст на чорным</item>
+    <item>Зялёны тэкст на чорны</item>
+    <item>Бурштынавы тэкст на чорным</item>
+    <item>Чырвоны тэкст на чорны</item>
+    <item>Сіні тэкст на чорным</item>
   </string-array>
 </resources>
