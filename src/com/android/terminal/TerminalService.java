@@ -23,7 +23,7 @@ import android.os.IBinder;
 import android.util.SparseArray;
 
 /**
- * Background service that keeps {@link Terminal} instances running and warm
+ * Background service that keeps {@link Terminal} instances running and warn
  * when UI isn't present.
  */
 public class TerminalService extends Service {
