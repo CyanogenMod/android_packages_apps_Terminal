@@ -19,6 +19,22 @@
   <string-array name="screen_orientation_labels">
     <item>Automático</item>
     <item>Paisaxe</item>
-    <item>Portrait</item>
+    <item>Retrato</item>
+  </string-array>
+  <string-array name="font_size_labels">
+    <item>10 pt</item>
+    <item>12 pt</item>
+    <item>14 pt</item>
+    <item>16 pt</item>
+    <item>20 pt</item>
+    <item>24 pt</item>
+  </string-array>
+  <string-array name="text_colors_labels">
+    <item>Texto negro sobre branco</item>
+    <item>Texto branco sobre negro</item>
+    <item>Texto verde sobre negro</item>
+    <item>Texto ámbar sobre negro</item>
+    <item>Texto vermello sobre negro</item>
+    <item>Texto azul sobre negro</item>
   </string-array>
 </resources>

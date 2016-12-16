@@ -19,6 +19,11 @@
   <string name="app_label">Terminal</string>
   <string name="menu_new_tab">Nova lapela</string>
   <string name="menu_close_tab">Pechar lapela</string>
+  <string name="menu_item_settings">Axustes</string>
   <string name="screen_settings">Axustes da pantalla</string>
   <string name="fullscreen_mode_title">Modo pantalla completa</string>
+  <string name="screen_orientation_title">Orientación da pantalla</string>
+  <string name="text_settings">Axustes do texto</string>
+  <string name="font_size_title">Tamaño da fonte</string>
+  <string name="text_colors_title">Cores do texto</string>
 </resources>
